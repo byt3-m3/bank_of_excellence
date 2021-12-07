@@ -31,13 +31,16 @@ class AdultAccountDetail(UserAccountDetail):
 
 
 @dataclass
-class FamilyAggregate(Aggregate):
+class UserAccountAggregate(Aggregate):
     pass
 
 
 @dataclass
-class UserAccountAggregate(Aggregate):
-    pass
+class FamilyAggregate(Aggregate):
+    members: List[UserAccountAggregate]
+    name: str
+    description: str
+    subscription_type: SubscriptionTypeEnum
 
 
 class QueryDomainWriteModel:
