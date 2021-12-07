@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from enum import Enum
 from boe.lib.common_models import Aggregate
-from uuid import UUID
+from uuid import UUID, uuid4
 from typing import List, Union
 from datetime import datetime
 
@@ -16,18 +16,21 @@ class SubscriptionTypeEnum(Enum):
     premium = 1
 
 
+@dataclass
 class UserAccountDetail:
     first_name: str
     last_name: str
     email: str
 
 
+@dataclass
 class ChildAccountDetail(UserAccountDetail):
     dob: datetime
     age: int
     grade: int
 
 
+@dataclass
 class AdultAccountDetail(UserAccountDetail):
     pass
 
@@ -74,17 +77,78 @@ class UserDomainFactory:
     def rebuild_family(self) -> FamilyAggregate:
         raise NotImplementedError
 
-    def build_user_account(self) -> UserAccountAggregate:
-        raise NotImplementedError
+    @staticmethod
+    def build_child_account(
+            age: int,
+            dob: datetime,
+            email: str,
+            first_name: str,
+            last_name: str,
+            grade: int,
+    ) -> UserAccountAggregate:
+        return UserAccountAggregate(
+            account_detail=UserDomainFactory.build_child_account_detail(
+                age=age,
+                dob=dob,
+                email=email,
+                first_name=first_name,
+                last_name=last_name,
+                grade=grade
+            ),
+            account_type=UserAccountTypeEnum.child,
+            id=uuid4()
+        )
+
+    @staticmethod
+    def build_adult_account(
+            email: str,
+            first_name: str,
+            last_name: str,
+    ) -> UserAccountAggregate:
+        return UserAccountAggregate(
+            account_detail=UserDomainFactory.build_adult_account_detail(
+
+                email=email,
+                first_name=first_name,
+                last_name=last_name,
+
+            ),
+            account_type=UserAccountTypeEnum.adult,
+            id=uuid4()
+        )
 
     def rebuild_user_account(self) -> UserAccountAggregate:
         raise NotImplementedError
 
-    def build_child_account_detail(self) -> ChildAccountDetail:
-        raise NotImplementedError
+    @staticmethod
+    def build_child_account_detail(
+            age: int,
+            dob: datetime,
+            email: str,
+            first_name: str,
+            last_name: str,
+            grade: int,
+    ) -> ChildAccountDetail:
+        return ChildAccountDetail(
+            age=age,
+            dob=dob,
+            email=email,
+            first_name=first_name,
+            last_name=last_name,
+            grade=grade
+        )
 
-    def build_adult_account_detail(self) -> AdultAccountDetail:
-        raise NotImplementedError
+    @staticmethod
+    def build_adult_account_detail(
+            first_name: str,
+            last_name: str,
+            email: str,
+    ) -> AdultAccountDetail:
+        return AdultAccountDetail(
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+        )
 
 
 class UserDomainRepository:
