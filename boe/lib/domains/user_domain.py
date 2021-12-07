@@ -2,7 +2,8 @@ from dataclasses import dataclass
 from enum import Enum
 from boe.lib.common_models import Aggregate
 from uuid import UUID
-from typing import List
+from typing import List, Union
+from datetime import datetime
 
 
 class UserAccountTypeEnum(Enum):
@@ -15,24 +16,26 @@ class SubscriptionTypeEnum(Enum):
     premium = 1
 
 
-@dataclass(frozen=True)
 class UserAccountDetail:
-    pass
+    first_name: str
+    last_name: str
+    email: str
 
 
-@dataclass(frozen=True)
 class ChildAccountDetail(UserAccountDetail):
-    pass
+    dob: datetime
+    age: int
+    grade: int
 
 
-@dataclass(frozen=True)
 class AdultAccountDetail(UserAccountDetail):
     pass
 
 
 @dataclass
 class UserAccountAggregate(Aggregate):
-    pass
+    account_type: UserAccountTypeEnum
+    account_detail: Union[ChildAccountDetail, AdultAccountDetail]
 
 
 @dataclass
