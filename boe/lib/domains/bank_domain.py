@@ -76,12 +76,12 @@ class BankDomainFactory:
 
     @staticmethod
     def rebuild_bank_account(
-            is_overdraft_protected,
-            owner_id,
-            transactions: dict,
-            state,
-            _balance,
-            _id,
+            is_overdraft_protected: bool,
+            owner_id: UUID,
+            transactions: list,
+            state: BankAccountStateEnum,
+            _balance: float,
+            _id: UUID,
             **kwargs
     ) -> BankAccountAggregate:
         """
