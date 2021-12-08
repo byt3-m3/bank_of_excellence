@@ -7,6 +7,7 @@ from boe.lib.domains.user_domain import (
     UserDomainFactory,
     AdultAccountDetail,
     UserAccountTypeEnum,
+    UserDomainWriteModel,
     ChildAccountDetail
 )
 from datetime import datetime
@@ -93,3 +94,13 @@ def test_family_when_fetching_member_is_invalid(family_testable, child_account_t
 
     with pytest.raises(ValueError):
         family.get_member(member_id=child_member.id)
+
+
+def _test_user_domain_write_model_when_saving_user_account(adult_account_testable, child_account_testable):
+    child_account = child_account_testable
+    adult_account = adult_account_testable
+
+    write_model = UserDomainWriteModel()
+
+    write_model.save_user_account(account=child_account)
+    write_model.save_user_account(account=adult_account)
