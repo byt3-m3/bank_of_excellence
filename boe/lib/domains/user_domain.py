@@ -8,6 +8,8 @@ from cbaxter1988_utils.pymongo_utils import (
     get_client,
     get_database,
     add_item,
+    get_item,
+    scan_items,
     get_collection
 )
 from boe.env import MONGO_HOST, MONGO_PORT, APP_DB, USER_ACCOUNT_TABLE
@@ -90,14 +92,31 @@ class UserDomainWriteModel:
 
 
 class UserDomainQueryModel:
+    def __init__(self):
+        self.client = get_client(
+            db_host=MONGO_HOST,
+            db_port=MONGO_PORT
+        )
+
+        self.db = get_database(client=self.client, db_name=APP_DB)
+
     def get_family_by_id(self, agg_id: UUID) -> dict:
         raise NotImplementedError
 
     def get_user_account_by_id(self, agg_id: UUID) -> dict:
-        raise NotImplementedError
+        collection = get_collection(database=self.db, collection=USER_ACCOUNT_TABLE)
+
+        cursor = list(get_item(collection=collection, item_id=agg_id, item_key="id"))
+
+        if len(cursor) != 1:
+            # TODO: Add Exception
+            print("Query Error")
+
+        return cursor[0]
 
     def scan_user_accounts(self) -> List[dict]:
-        raise NotImplementedError
+        collection = get_collection(database=self.db, collection=USER_ACCOUNT_TABLE)
+        return list(scan_items(collection=collection))
 
     def scan_child_accounts(self) -> List[dict]:
         raise NotImplementedError
@@ -179,8 +198,18 @@ class UserDomainFactory:
             id=uuid4()
         )
 
-    def rebuild_user_account(self) -> UserAccountAggregate:
-        raise NotImplementedError
+    @staticmethod
+    def rebuild_user_account(
+            _id,
+            account_type,
+            account_detail,
+            **kwargs
+    ) -> UserAccountAggregate:
+        return UserAccountAggregate(
+            id=_id,
+            account_detail=account_detail,
+            account_type=account_type
+        )
 
     @staticmethod
     def build_child_account_detail(
@@ -214,10 +243,25 @@ class UserDomainFactory:
 
 
 class UserDomainRepository:
-    factory: UserDomainFactory
-    query_model: UserDomainQueryModel
-    write_model: UserDomainWriteModel
+
+    def __init__(self):
+        self.factory: UserDomainFactory = UserDomainFactory()
+        self.query_model: UserDomainQueryModel = UserDomainQueryModel()
+        self.write_model: UserDomainWriteModel = UserDomainWriteModel()
 
     def save(self, model: UserAccountAggregate) -> UUID:
         if isinstance(model, UserAccountAggregate):
             return self.write_model.save_user_account(model)
+
+    def get_user_account(self, account_id: UUID) -> UserAccountAggregate:
+        model_dict = self.query_model.get_user_account_by_id(agg_id=account_id)
+
+        return self.factory.rebuild_user_account(
+            **model_dict
+        )
+
+    def get_user_accounts(self):
+        items = self.query_model.scan_user_accounts()
+        return [
+            self.factory.rebuild_user_account(**item) for item in items
+        ]
