@@ -34,9 +34,9 @@ def child_account_testable() -> UserAccountAggregate:
 
 
 @fixture
-def family_testable(uuid4_mock) -> FamilyAggregate:
+def family_testable(uuid4_1) -> FamilyAggregate:
     return UserDomainFactory.rebuild_family(
-        _id=uuid4_mock,
+        _id=uuid4_1,
         name='TEST',
         members=[],
         description='TEST',
