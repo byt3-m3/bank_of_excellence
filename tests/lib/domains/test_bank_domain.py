@@ -12,36 +12,30 @@ from uuid import uuid4, UUID
 
 
 @fixture
-def item_id():
-    return uuid4()
-
-
-@fixture
-def owner_id():
-    return uuid4()
-
-
-@fixture
-def bank_account_testable(owner_id) -> BankAccountAggregate:
-    return BankDomainFactory.build_bank_account(
-        owner_id=owner_id,
-        is_overdraft_protected=False
+def bank_account_testable(uuid4_1) -> BankAccountAggregate:
+    return BankDomainFactory.rebuild_bank_account(
+        _id=uuid4_1,
+        owner_id=uuid4_1,
+        is_overdraft_protected=False,
+        _balance=0,
+        state=BankAccountStateEnum.active,
+        transactions=[]
     )
 
 
 @fixture
-def bank_transaction_add_testable(item_id) -> BankTransaction:
+def bank_transaction_add_testable(uuid4_2) -> BankTransaction:
     return BankDomainFactory.build_bank_transaction(
-        item_id=item_id,
+        item_id=uuid4_2,
         method=BankTransactionMethodEnum.add,
         value=5.00
     )
 
 
 @fixture
-def bank_transaction_subtract_testable(item_id) -> BankTransaction:
+def bank_transaction_subtract_testable(uuid4_3) -> BankTransaction:
     return BankDomainFactory.build_bank_transaction(
-        item_id=item_id,
+        item_id=uuid4_3,
         method=BankTransactionMethodEnum.subtract,
         value=5.00
     )
@@ -101,7 +95,7 @@ def _test_bank_domain_write_model_when_saving_bank_account(bank_account_testable
     )
 
 
-def _test_bank_domain_query_model_when_querying_by_id(owner_id):
+def _test_bank_domain_query_model_when_querying_by_id(uuid_1):
     # TODO: Add Mock for Query
     query_model = BankDomainQueryModel()
 
