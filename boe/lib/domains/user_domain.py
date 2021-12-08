@@ -48,6 +48,23 @@ class FamilyAggregate(Aggregate):
     description: str
     subscription_type: SubscriptionTypeEnum
 
+    def change_subscription_type(self, subscription_type: SubscriptionTypeEnum):
+        self.subscription_type = subscription_type
+
+    def add_member(self, member: UserAccountAggregate):
+        for _member in self.members:
+            if member.id == _member:
+                raise ValueError("Member Already Present in Family")
+
+        self.members.append(member)
+
+    def get_member(self, member_id: UUID) -> UserAccountAggregate:
+        for _member in self.members:
+            if member_id == _member.id:
+                return _member
+
+        raise ValueError(f'Member {member_id} Not in Family')
+
 
 class QueryDomainWriteModel:
     pass
@@ -71,11 +88,37 @@ class UserDomainQueryModel:
 
 
 class UserDomainFactory:
-    def build_family(self) -> FamilyAggregate:
-        raise NotImplementedError
 
-    def rebuild_family(self) -> FamilyAggregate:
-        raise NotImplementedError
+    @staticmethod
+    def build_family(
+            name: str,
+            description: str,
+            subscription_type: SubscriptionTypeEnum,
+            members: List[UserAccountAggregate]
+    ) -> FamilyAggregate:
+        return FamilyAggregate(
+            id=uuid4(),
+            members=members if members is not None else [],
+            name=name,
+            description=description,
+            subscription_type=subscription_type
+        )
+
+    @staticmethod
+    def rebuild_family(
+            _id: UUID,
+            name: str,
+            description: str,
+            subscription_type: SubscriptionTypeEnum,
+            members: List[UserAccountAggregate]
+    ) -> FamilyAggregate:
+        return FamilyAggregate(
+            id=_id,
+            members=members if members is not None else [],
+            name=name,
+            description=description,
+            subscription_type=subscription_type
+        )
 
     @staticmethod
     def build_child_account(
