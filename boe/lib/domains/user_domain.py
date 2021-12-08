@@ -4,6 +4,14 @@ from boe.lib.common_models import Aggregate
 from uuid import UUID, uuid4
 from typing import List, Union
 from datetime import datetime
+from cbaxter1988_utils.pymongo_utils import (
+    get_client,
+    get_database,
+    add_item,
+    get_collection
+)
+from boe.env import MONGO_HOST, MONGO_PORT, APP_DB, USER_ACCOUNT_TABLE
+from boe.utils.serialization_utils import serialize_aggregate
 
 
 class UserAccountTypeEnum(Enum):
@@ -66,8 +74,19 @@ class FamilyAggregate(Aggregate):
         raise ValueError(f'Member {member_id} Not in Family')
 
 
-class QueryDomainWriteModel:
-    pass
+class UserDomainWriteModel:
+    def __init__(self):
+        self.client = get_client(
+            db_host=MONGO_HOST,
+            db_port=MONGO_PORT
+        )
+
+        self.db = get_database(client=self.client, db_name=APP_DB)
+
+    def save_user_account(self, account: UserAccountAggregate) -> UUID:
+        collection = get_collection(database=self.db, collection=USER_ACCOUNT_TABLE)
+        add_item(collection=collection, item=serialize_aggregate(account), key_id='id')
+        return account.id
 
 
 class UserDomainQueryModel:
@@ -197,7 +216,8 @@ class UserDomainFactory:
 class UserDomainRepository:
     factory: UserDomainFactory
     query_model: UserDomainQueryModel
-    write_model: QueryDomainWriteModel
+    write_model: UserDomainWriteModel
 
-    def save(self) -> UUID:
-        raise NotImplementedError
+    def save(self, model: UserAccountAggregate) -> UUID:
+        if isinstance(model, UserAccountAggregate):
+            return self.write_model.save_user_account(model)
