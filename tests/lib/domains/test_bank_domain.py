@@ -104,6 +104,15 @@ def test_bank_account_when_new_transaction(bank_account_testable):
     assert len(bank_account.transactions) == 1
 
 
+def test_bank_account_when_validating_transaction_count(bank_account_testable, bank_transaction_add_testable):
+    bank_account = bank_account_testable
+    transaction_1 = bank_transaction_add_testable
+    bank_account.apply_transaction(
+        transaction=transaction_1
+    )
+    assert bank_account.transaction_count == 1
+
+
 def _test_bank_domain_write_model_when_saving_bank_account(bank_account_testable, bank_transaction_add_testable):
     # TODO: Add Mock for WriteModel to Mongo
 

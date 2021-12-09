@@ -54,6 +54,10 @@ class BankAccountAggregate(Aggregate):
 
         return self._balance
 
+    @property
+    def transaction_count(self) -> int:
+        return len(self.transactions)
+
     def apply_transaction(self, transaction: BankTransaction) -> bool:
         self.transactions.append(transaction)
         _ = self.balance
