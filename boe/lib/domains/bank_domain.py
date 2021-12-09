@@ -59,6 +59,19 @@ class BankAccountAggregate(Aggregate):
         _ = self.balance
         return True
 
+    def new_transaction(
+            self,
+            item_id: UUID,
+            method: BankTransactionMethodEnum,
+            value: float
+    ) -> bool:
+        transaction = BankDomainFactory.build_bank_transaction(
+            item_id=item_id,
+            method=method,
+            value=value
+        )
+        return self.apply_transaction(transaction=transaction)
+
     def get_transaction_by_id(self, transaction_id: UUID) -> BankTransaction:
         for _transaction in self.transactions:
             if transaction_id == _transaction.transaction_id:
