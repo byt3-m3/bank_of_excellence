@@ -6,9 +6,15 @@ from boe.lib.domains.bank_domain import (
     BankDomainWriteModel,
     BankDomainQueryModel,
     BankDomainFactory,
+    BankDomainRepository,
     BankAccountStateEnum
 )
 from uuid import uuid4, UUID
+
+
+@fixture
+def bank_domain_repository():
+    return BankDomainRepository()
 
 
 @fixture
@@ -108,3 +114,17 @@ def _test_bank_domain_query_model_when_querying_by_id(uuid_1):
     assert isinstance(model, BankAccountAggregate)
     for transaction in model.transactions:
         assert isinstance(transaction, BankTransaction)
+
+
+def _test_bank_domain_repo_when_saving_bank_account(bank_domain_repository, bank_account_testable):
+    # TODO: Add Mock for Query
+    repo = bank_domain_repository
+    bank_account = bank_account_testable
+    repo.save_bank_account(account=bank_account)
+
+
+def _test_bank_domain_repo_when_fetching_bank_account(bank_domain_repository):
+    # TODO: Add Mock for Query
+    repo = bank_domain_repository
+    result = repo.get_bank_account(account_id=UUID("184abb3f-be96-471c-8e18-f3b479939492"))
+    print(result)
