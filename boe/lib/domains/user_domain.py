@@ -12,7 +12,13 @@ from cbaxter1988_utils.pymongo_utils import (
     scan_items,
     get_collection
 )
-from boe.env import MONGO_HOST, MONGO_PORT, APP_DB, USER_ACCOUNT_TABLE
+from boe.env import (
+    MONGO_HOST,
+    MONGO_PORT,
+    APP_DB,
+    USER_ACCOUNT_TABLE,
+    FAMILY_TABLE
+)
 from boe.utils.serialization_utils import serialize_aggregate
 
 
@@ -90,6 +96,11 @@ class UserDomainWriteModel:
         add_item(collection=collection, item=serialize_aggregate(account), key_id='id')
         return account.id
 
+    def save_family(self, family: FamilyAggregate) -> UUID:
+        collection = get_collection(database=self.db, collection=FAMILY_TABLE)
+        add_item(collection=collection, item=serialize_aggregate(family), key_id='id')
+        return family.id
+
 
 class UserDomainQueryModel:
     def __init__(self):
@@ -100,8 +111,16 @@ class UserDomainQueryModel:
 
         self.db = get_database(client=self.client, db_name=APP_DB)
 
-    def get_family_by_id(self, agg_id: UUID) -> dict:
-        raise NotImplementedError
+    def get_family_by_id(self, family_id: UUID) -> dict:
+        collection = get_collection(database=self.db, collection=FAMILY_TABLE)
+
+        cursor = list(get_item(collection=collection, item_id=family_id, item_key="id"))
+
+        if len(cursor) != 1:
+            # TODO: Add Exception
+            print("Query Error")
+
+        return cursor[0]
 
     def get_user_account_by_id(self, agg_id: UUID) -> dict:
         collection = get_collection(database=self.db, collection=USER_ACCOUNT_TABLE)
@@ -122,7 +141,8 @@ class UserDomainQueryModel:
         raise NotImplementedError
 
     def scan_families(self) -> List[dict]:
-        raise NotImplementedError
+        collection = get_collection(database=self.db, collection=FAMILY_TABLE)
+        return list(scan_items(collection=collection))
 
 
 class UserDomainFactory:
@@ -148,7 +168,8 @@ class UserDomainFactory:
             name: str,
             description: str,
             subscription_type: SubscriptionTypeEnum,
-            members: List[UserAccountAggregate]
+            members: List[UserAccountAggregate],
+            **kwargs
     ) -> FamilyAggregate:
         return FamilyAggregate(
             id=_id,
@@ -260,8 +281,21 @@ class UserDomainRepository:
             **model_dict
         )
 
-    def get_user_accounts(self):
+    def get_user_accounts(self) -> List[UserAccountAggregate]:
         items = self.query_model.scan_user_accounts()
         return [
             self.factory.rebuild_user_account(**item) for item in items
+        ]
+
+    def get_family(self, family_id) -> FamilyAggregate:
+        model_dict = self.query_model.get_family_by_id(family_id=family_id)
+
+        return self.factory.rebuild_family(
+            **model_dict
+        )
+
+    def get_families(self):
+        items = self.query_model.scan_families()
+        return [
+            self.factory.rebuild_family(**item) for item in items
         ]
