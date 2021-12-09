@@ -179,10 +179,19 @@ class BankDomainQueryModel:
 
 
 class BankDomainRepository:
-    factory: BankDomainFactory
-    write_model: BankDomainWriteModel
-    query_model: BankDomainQueryModel
 
-    def save(self, model: BankAccountAggregate):
-        if isinstance(model, BankAccountAggregate):
-            return self.write_model.save_bank_account(bank_account=model)
+    def __init__(self):
+        self.factory = BankDomainFactory()
+        self.write_model = BankDomainWriteModel()
+        self.query_model = BankDomainQueryModel()
+
+    def save_bank_account(self, account: BankAccountAggregate):
+        if isinstance(account, BankAccountAggregate):
+            return self.write_model.save_bank_account(bank_account=account)
+
+    def get_bank_account(self, account_id: UUID):
+        data = self.query_model.get_bank_account_by_id(account_id=account_id)
+
+        return self.factory.rebuild_bank_account(
+            **data
+        )
