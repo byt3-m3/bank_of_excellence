@@ -13,6 +13,11 @@ from uuid import uuid4, UUID
 
 
 @fixture
+def bank_domain_write_model():
+    return BankDomainWriteModel()
+
+
+@fixture
 def bank_domain_repository():
     return BankDomainRepository()
 
@@ -68,7 +73,7 @@ def test_bank_account_when_adding_transaction(bank_account_testable, bank_transa
         assert isinstance(transaction.method, BankTransactionMethodEnum)
 
 
-def test_bank_account_when_subtracting_transaction(bank_account_testable, bank_transaction_subtract_testable):
+def test_bank_account_when_subtracting_transaction(bank_account_testable, bank_transaction_subtract_testable, uuid4_1):
     bank_account = bank_account_testable
     transaction = bank_transaction_subtract_testable
 
@@ -150,3 +155,16 @@ def _test_bank_domain_repo_when_fetching_bank_account(bank_domain_repository):
     repo = bank_domain_repository
     result = repo.get_bank_account(account_id=UUID("184abb3f-be96-471c-8e18-f3b479939492"))
     print(result)
+
+
+def test_bank_domain_write_model_when_updating_account(bank_account_testable, bank_domain_write_model,
+                                                       bank_transaction_add_testable):
+    # TODO: Add Mock
+    bank_account = bank_account_testable
+    write_model = bank_domain_write_model
+    transaction = bank_transaction_add_testable
+
+    # write_model.save_bank_account(bank_account=bank_account)
+    bank_account.apply_transaction(transaction=transaction)
+    bank_account.apply_transaction(transaction=transaction)
+    write_model.update_bank_account(bank_account=bank_account)

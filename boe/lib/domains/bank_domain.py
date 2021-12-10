@@ -9,10 +9,12 @@ from cbaxter1988_utils.pymongo_utils import (
     get_database,
     add_item,
     get_item,
+    update_item
 )
 from datetime import datetime
 from boe.env import MONGO_HOST, MONGO_PORT, APP_DB, BANK_ACCOUNT_TABLE
 from boe.utils.serialization_utils import serialize_aggregate, serialize_dataclass
+from pymongo.errors import DuplicateKeyError
 
 
 class BankAccountStateEnum(Enum):
@@ -165,12 +167,29 @@ class BankDomainWriteModel:
 
     def save_bank_account(self, bank_account: BankAccountAggregate) -> UUID:
         collection = get_collection(database=self.db, collection=BANK_ACCOUNT_TABLE)
+        try:
+            add_item(collection=collection, item=serialize_aggregate(bank_account), key_id='id')
+            return bank_account.id
 
-        add_item(collection=collection, item=serialize_aggregate(bank_account), key_id='id')
-        return bank_account.id
+        except DuplicateKeyError:
+            return self.update_bank_account(
+                bank_account=bank_account
+            )
 
     def update_bank_account(self, bank_account: BankAccountAggregate) -> UUID:
-        return NotImplemented
+        collection = get_collection(database=self.db, collection=BANK_ACCOUNT_TABLE)
+
+        new_data = serialize_aggregate(bank_account)
+
+        result = update_item(
+            collection=collection,
+            item_id=bank_account.id,
+            new_values=new_data
+        )
+        if result.matched_count == 0:
+            raise Exception(f"No Records matching: '{bank_account.id}'")
+
+        return bank_account.id
 
 
 class BankDomainQueryModel:
