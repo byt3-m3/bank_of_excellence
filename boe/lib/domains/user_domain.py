@@ -10,6 +10,7 @@ from cbaxter1988_utils.pymongo_utils import (
     add_item,
     get_item,
     scan_items,
+    update_item,
     get_collection
 )
 from boe.env import (
@@ -20,6 +21,7 @@ from boe.env import (
     FAMILY_TABLE
 )
 from boe.utils.serialization_utils import serialize_aggregate
+from pymongo.errors import DuplicateKeyError
 
 
 class UserAccountTypeEnum(Enum):
@@ -93,7 +95,14 @@ class UserDomainWriteModel:
 
     def save_user_account(self, account: UserAccountAggregate) -> UUID:
         collection = get_collection(database=self.db, collection=USER_ACCOUNT_TABLE)
-        add_item(collection=collection, item=serialize_aggregate(account), key_id='id')
+        try:
+            add_item(collection=collection, item=serialize_aggregate(account), key_id='id')
+            return account.id
+        except DuplicateKeyError:
+            result = update_item(collection=collection, item_id=account.id, new_values=serialize_aggregate(account))
+            if result.matched_count == 0:
+                raise Exception(f"No Records matching: '{account.id}'")
+
         return account.id
 
     def save_family(self, family: FamilyAggregate) -> UUID:
@@ -313,8 +322,12 @@ class UserDomainRepository:
         self.write_model: UserDomainWriteModel = UserDomainWriteModel()
 
     def save(self, model: UserAccountAggregate) -> UUID:
-        if isinstance(model, UserAccountAggregate):
-            return self.write_model.save_user_account(model)
+        try:
+            if isinstance(model, UserAccountAggregate):
+                return self.write_model.save_user_account(model)
+        except DuplicateKeyError:
+            if isinstance(model, UserAccountAggregate):
+                return self.write_model
 
     def get_user_account(self, account_id: UUID) -> UserAccountAggregate:
         model_dict = self.query_model.get_user_account_by_id(agg_id=account_id)
