@@ -202,6 +202,29 @@ class UserDomainFactory:
         )
 
     @staticmethod
+    def rebuild_child_account(
+            _id: UUID,
+            age: int,
+            dob: datetime,
+            email: str,
+            first_name: str,
+            last_name: str,
+            grade: int,
+    ) -> UserAccountAggregate:
+        return UserAccountAggregate(
+            id=_id,
+            account_detail=ChildAccountDetail(
+                email=email,
+                first_name=first_name,
+                last_name=last_name,
+                age=age,
+                dob=dob,
+                grade=grade
+            ),
+            account_type=UserAccountTypeEnum.child
+        )
+
+    @staticmethod
     def build_adult_account(
             email: str,
             first_name: str,
@@ -217,6 +240,23 @@ class UserDomainFactory:
             ),
             account_type=UserAccountTypeEnum.adult,
             id=uuid4()
+        )
+
+    @staticmethod
+    def rebuild_adult_account(
+            _id: UUID,
+            email: str,
+            first_name: str,
+            last_name: str,
+    ) -> UserAccountAggregate:
+        return UserAccountAggregate(
+            id=_id,
+            account_detail=AdultAccountDetail(
+                email=email,
+                first_name=first_name,
+                last_name=last_name
+            ),
+            account_type=UserAccountTypeEnum.adult
         )
 
     @staticmethod
