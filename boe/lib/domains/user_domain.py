@@ -106,8 +106,14 @@ class UserDomainWriteModel:
         return account.id
 
     def save_family(self, family: FamilyAggregate) -> UUID:
-        collection = get_collection(database=self.db, collection=FAMILY_TABLE)
-        add_item(collection=collection, item=serialize_aggregate(family), key_id='id')
+        try:
+            collection = get_collection(database=self.db, collection=FAMILY_TABLE)
+            add_item(collection=collection, item=serialize_aggregate(family), key_id='id')
+        except DuplicateKeyError:
+            result = update_item(collection=collection, item_id=family.id, new_values=serialize_aggregate(family))
+            if result.matched_count == 0:
+                raise Exception(f"No Records matching: '{family.id}'")
+
         return family.id
 
 
