@@ -327,13 +327,13 @@ class UserDomainRepository:
         self.query_model: UserDomainQueryModel = UserDomainQueryModel()
         self.write_model: UserDomainWriteModel = UserDomainWriteModel()
 
-    def save(self, model: UserAccountAggregate) -> UUID:
-        try:
-            if isinstance(model, UserAccountAggregate):
-                return self.write_model.save_user_account(model)
-        except DuplicateKeyError:
-            if isinstance(model, UserAccountAggregate):
-                return self.write_model
+    def save(self, model: Union[UserAccountAggregate, FamilyAggregate]) -> UUID:
+
+        if isinstance(model, UserAccountAggregate):
+            return self.write_model.save_user_account(model)
+
+        if isinstance(model, FamilyAggregate):
+            return self.write_model.save_family(family=model)
 
     def get_user_account(self, account_id: UUID) -> UserAccountAggregate:
         model_dict = self.query_model.get_user_account_by_id(agg_id=account_id)

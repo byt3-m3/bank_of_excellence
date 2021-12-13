@@ -32,23 +32,25 @@ def user_domain_query_model() -> UserDomainQueryModel:
 
 
 @fixture
-def adult_account_testable() -> UserAccountAggregate:
-    return UserDomainFactory.build_adult_account(
+def adult_account_testable(uuid4_3) -> UserAccountAggregate:
+    return UserDomainFactory.rebuild_adult_account(
         first_name='TEST',
         last_name='TEST',
-        email='TEST'
+        email='TEST',
+        _id=uuid4_3
     )
 
 
 @fixture
-def child_account_testable() -> UserAccountAggregate:
-    return UserDomainFactory.build_child_account(
+def child_account_testable(uuid4_4) -> UserAccountAggregate:
+    return UserDomainFactory.rebuild_child_account(
         first_name='TEST',
         last_name='TEST',
         email='TEST',
         age=7,
         dob=datetime(year=2014, month=12, day=20),
-        grade=7
+        grade=7,
+        _id=uuid4_4
     )
 
 
@@ -200,3 +202,21 @@ def _test_user_domain_repo_when_scanning_family(user_domain_repository):
 
     models = repo.get_families()
     print(models)
+
+
+def _test_user_domain_write_model_when_updating_user_account(user_domain_write_model, adult_account_testable):
+    print(adult_account_testable.id)
+    write_model = user_domain_write_model
+
+    adult_account_testable.account_detail.email = "new_email@test.com"
+
+    write_model.save_user_account(adult_account_testable)
+
+
+def _test_user_domain_write_model_when_updating_family(user_domain_write_model, family_testable):
+    print(family_testable.id)
+    write_model = user_domain_write_model
+
+    family_testable.name = "new_test_name"
+
+    write_model.save_family(family_testable)

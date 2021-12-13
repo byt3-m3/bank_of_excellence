@@ -157,8 +157,8 @@ def _test_bank_domain_repo_when_fetching_bank_account(bank_domain_repository):
     print(result)
 
 
-def test_bank_domain_write_model_when_updating_account(bank_account_testable, bank_domain_write_model,
-                                                       bank_transaction_add_testable):
+def _test_bank_domain_write_model_when_updating_account(bank_account_testable, bank_domain_write_model,
+                                                        bank_transaction_add_testable):
     # TODO: Add Mock
     bank_account = bank_account_testable
     write_model = bank_domain_write_model
