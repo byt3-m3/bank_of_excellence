@@ -210,6 +210,7 @@ class UserDomainFactory:
             first_name: str,
             last_name: str,
             grade: int,
+            **kwargs
     ) -> UserAccountAggregate:
         return UserAccountAggregate(
             id=_id,
@@ -248,6 +249,7 @@ class UserDomainFactory:
             email: str,
             first_name: str,
             last_name: str,
+            **kwargs
     ) -> UserAccountAggregate:
         return UserAccountAggregate(
             id=_id,
