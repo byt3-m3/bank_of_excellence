@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum
-from boe.lib.common_models import Aggregate
+from boe.lib.common_models import Entity
 from uuid import UUID, uuid4
 from typing import List, Union
 from datetime import datetime
@@ -54,13 +54,13 @@ class AdultAccountDetail(UserAccountDetail):
 
 
 @dataclass
-class UserAccountAggregate(Aggregate):
+class UserAccountAggregate(Entity):
     account_type: UserAccountTypeEnum
     account_detail: Union[ChildAccountDetail, AdultAccountDetail]
 
 
 @dataclass
-class FamilyAggregate(Aggregate):
+class FamilyAggregate(Entity):
     members: List[UserAccountAggregate]
     name: str
     description: str

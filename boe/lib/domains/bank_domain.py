@@ -1,8 +1,12 @@
-from boe.lib.common_models import Aggregate
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
+from datetime import datetime
 from enum import Enum
+from typing import List
 from uuid import UUID, uuid4
-from typing import List, Dict
+
+from boe.env import MONGO_HOST, MONGO_PORT, APP_DB, BANK_ACCOUNT_TABLE
+from boe.lib.common_models import Entity
+from boe.utils.serialization_utils import serialize_aggregate
 from cbaxter1988_utils.pymongo_utils import (
     get_client,
     get_collection,
@@ -11,15 +15,13 @@ from cbaxter1988_utils.pymongo_utils import (
     get_item,
     update_item
 )
-from datetime import datetime
-from boe.env import MONGO_HOST, MONGO_PORT, APP_DB, BANK_ACCOUNT_TABLE
-from boe.utils.serialization_utils import serialize_aggregate, serialize_dataclass
+from eventsourcing.domain import Aggregate, event
 from pymongo.errors import DuplicateKeyError
 
 
 class BankAccountStateEnum(Enum):
-    active = 0
-    inactive = 1
+    enabled = 0
+    disabled = 1
 
 
 class BankTransactionMethodEnum(Enum):
@@ -28,8 +30,8 @@ class BankTransactionMethodEnum(Enum):
 
 
 @dataclass
-class BankTransaction:
-    transaction_id: UUID
+class BankTransactionEntity(Entity):
+    account_id: UUID
     created: datetime
     item_id: UUID
     value: float
@@ -37,72 +39,114 @@ class BankTransaction:
 
 
 @dataclass
-class BankAccountAggregate(Aggregate):
+class BankAccountEntity(Entity):
     owner_id: UUID
     is_overdraft_protected: bool
-    transactions: List[BankTransaction] = field(default_factory=list)
-    state: BankAccountStateEnum = field(default=BankAccountStateEnum.active)
-    _balance: float = field(default=0)
+    state: BankAccountStateEnum = field(default=BankAccountStateEnum.enabled)
+    balance: float = field(default=0)
 
-    @property
-    def balance(self):
-        self._balance = 0
-        for transaction in self.transactions:
+
+@dataclass
+class BankDomainAggregate(Aggregate):
+    bank_accounts: List[BankAccountEntity]
+    bank_transactions: List[BankTransactionEntity]
+
+    def _get_account(self, account_id: UUID) -> BankAccountEntity:
+        for account in self.bank_accounts:
+            if account.id == account_id:
+                return account
+
+        raise ValueError(f"No Account Matching: '{account_id}'")
+
+    def calculate_account_balance(self, account_id: UUID):
+        account_transactions = [
+            transaction for transaction in self.bank_transactions if transaction.account_id == account_id
+        ]
+
+        _balance = 0
+        for transaction in account_transactions:
             if transaction.method == BankTransactionMethodEnum.add:
-                self._balance += transaction.value
+                _balance += transaction.value
 
             if transaction.method == BankTransactionMethodEnum.subtract:
-                self._balance -= transaction.value
+                _balance -= transaction.value
 
-        return self._balance
+        return _balance
 
-    @property
-    def transaction_count(self) -> int:
-        return len(self.transactions)
+    def get_bank_account_entity(self, entity_id: UUID):
+        return self._get_account(
+            account_id=entity_id
+        )
 
-    def apply_transaction(self, transaction: BankTransaction) -> bool:
-        self.transactions.append(transaction)
-        _ = self.balance
-        return True
+    def _apply_transaction_to_account(self, transaction: BankTransactionEntity):
+        account = self._get_account(account_id=transaction.account_id)
+        if account is None:
+            raise ValueError(f"Invalid AccountID='{transaction.account_id}' for Transaction='{transaction.id}'")
 
+        self.bank_transactions.append(transaction)
+
+        account.balance = self.calculate_account_balance(account_id=account.id)
+
+    @event
+    def apply_transaction_to_account(self, transaction: BankTransactionEntity):
+        self._apply_transaction_to_account(transaction=transaction)
+
+    @event
+    def new_bank_account(self, owner_id: UUID, is_overdraft_protected: bool) -> UUID:
+        bank_account_entity = BankDomainFactory.build_bank_account_entity(
+            owner_id=owner_id,
+            is_overdraft_protected=is_overdraft_protected
+        )
+
+        self.bank_accounts.append(bank_account_entity)
+
+    @event
     def new_transaction(
             self,
             item_id: UUID,
             method: BankTransactionMethodEnum,
-            value: float
-    ) -> bool:
-        transaction = BankDomainFactory.build_bank_transaction(
+            value: float,
+            account_id: UUID
+    ):
+
+        transaction = BankDomainFactory.build_bank_transaction_entity(
             item_id=item_id,
             method=method,
-            value=value
+            value=value,
+            account_id=account_id
         )
-        return self.apply_transaction(transaction=transaction)
 
-    def get_transaction_by_id(self, transaction_id: UUID) -> BankTransaction:
-        for _transaction in self.transactions:
-            if transaction_id == _transaction.transaction_id:
-                return _transaction
+        self._apply_transaction_to_account(transaction=transaction)
+
+    @event
+    def disable_account(self, account_id: UUID):
+        account = self._get_account(account_id=account_id)
+        account.state = BankAccountStateEnum.disabled
+
+    @event
+    def enable_account(self, account_id: UUID):
+        account = self._get_account(account_id=account_id)
+        account.state = BankAccountStateEnum.enabled
 
 
 class BankDomainFactory:
     @staticmethod
-    def build_bank_account(owner_id: UUID, is_overdraft_protected: bool) -> BankAccountAggregate:
-        return BankAccountAggregate(
+    def build_bank_account_entity(owner_id: UUID, is_overdraft_protected: bool) -> BankAccountEntity:
+        return BankAccountEntity(
             is_overdraft_protected=is_overdraft_protected,
             owner_id=owner_id,
             id=owner_id
         )
 
     @staticmethod
-    def rebuild_bank_account(
+    def rebuild_bank_account_entity(
             is_overdraft_protected: bool,
             owner_id: UUID,
-            transactions: list,
             state: BankAccountStateEnum,
-            _balance: float,
+            balance: float,
             _id: UUID,
             **kwargs
-    ) -> BankAccountAggregate:
+    ) -> BankAccountEntity:
         """
         Method for reconstituting BankAccount from the persistent layer
 
@@ -110,49 +154,63 @@ class BankDomainFactory:
         :param owner_id:
         :param transactions:
         :param state:
-        :param _balance:
+        :param balance:
         :param _id:
         :return:
         """
-        return BankAccountAggregate(
+        return BankAccountEntity(
             is_overdraft_protected=is_overdraft_protected,
             owner_id=owner_id,
-            transactions=[
-                BankDomainFactory.rebuild_bank_transaction(**transaction, _id=_id)
-                for transaction in transactions
-            ],
             state=BankAccountStateEnum(state),
-            _balance=_balance,
+            balance=balance,
             id=_id
         )
 
     @staticmethod
-    def build_bank_transaction(item_id: UUID, method: BankTransactionMethodEnum, value: float) -> BankTransaction:
-        return BankTransaction(
+    def build_bank_transaction_entity(
+            item_id: UUID,
+            method: BankTransactionMethodEnum,
+            value: float,
+            account_id: UUID,
+
+    ) -> BankTransactionEntity:
+        return BankTransactionEntity(
             created=datetime.now(),
             item_id=item_id,
             method=method,
-            transaction_id=uuid4(),
-            value=value
+            id=uuid4(),
+            value=value,
+            account_id=account_id,
         )
 
     @staticmethod
-    def rebuild_bank_transaction(
+    def rebuild_bank_transaction_entity(
             created,
-            transaction_id,
+            _id,
             item_id,
             value,
             method,
+            account_id,
             **kwargs
 
-    ) -> BankTransaction:
-        return BankTransaction(
-
+    ) -> BankTransactionEntity:
+        return BankTransactionEntity(
+            id=_id,
             created=created,
-            transaction_id=transaction_id,
             item_id=item_id,
             value=value,
-            method=BankTransactionMethodEnum(method)
+            method=BankTransactionMethodEnum(method),
+            account_id=account_id
+        )
+
+    @staticmethod
+    def build_bank_domain_aggregate(
+            bank_accounts: List[BankAccountEntity],
+            bank_transactions: List[BankTransactionEntity]
+    ):
+        return BankDomainAggregate(
+            bank_accounts=bank_accounts,
+            bank_transactions=bank_transactions
         )
 
 
@@ -165,7 +223,7 @@ class BankDomainWriteModel:
 
         self.db = get_database(client=self.client, db_name=APP_DB)
 
-    def save_bank_account(self, bank_account: BankAccountAggregate) -> UUID:
+    def save_bank_account(self, bank_account: BankAccountEntity) -> UUID:
         collection = get_collection(database=self.db, collection=BANK_ACCOUNT_TABLE)
         try:
             add_item(collection=collection, item=serialize_aggregate(bank_account), key_id='id')
@@ -176,7 +234,7 @@ class BankDomainWriteModel:
                 bank_account=bank_account
             )
 
-    def update_bank_account(self, bank_account: BankAccountAggregate) -> UUID:
+    def update_bank_account(self, bank_account: BankAccountEntity) -> UUID:
         collection = get_collection(database=self.db, collection=BANK_ACCOUNT_TABLE)
 
         new_data = serialize_aggregate(bank_account)
@@ -221,13 +279,13 @@ class BankDomainRepository:
         self.write_model = BankDomainWriteModel()
         self.query_model = BankDomainQueryModel()
 
-    def save_bank_account(self, account: BankAccountAggregate):
-        if isinstance(account, BankAccountAggregate):
+    def save_bank_account(self, account: BankAccountEntity):
+        if isinstance(account, BankAccountEntity):
             return self.write_model.save_bank_account(bank_account=account)
 
     def get_bank_account(self, account_id: UUID):
         data = self.query_model.get_bank_account_by_id(account_id=account_id)
 
-        return self.factory.rebuild_bank_account(
+        return self.factory.rebuild_bank_account_entity(
             **data
         )

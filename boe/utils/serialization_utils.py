@@ -1,4 +1,4 @@
-from boe.lib.common_models import Aggregate
+from boe.lib.common_models import Entity
 from dataclasses import asdict, is_dataclass
 from enum import Enum
 from uuid import UUID
@@ -19,7 +19,7 @@ def _serialize_list(items: list):
             _serialize_list(items=item)
 
 
-def serialize_aggregate(model: Aggregate):
+def serialize_aggregate(model: Entity):
     data = asdict(model)
 
     for key, val in data.items():
