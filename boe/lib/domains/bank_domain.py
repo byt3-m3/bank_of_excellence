@@ -38,6 +38,15 @@ class BankTransactionEntity(Entity):
     method: BankTransactionMethodEnum = field(default_factory=BankTransactionMethodEnum)
 
 
+@dataclass(frozen=True)
+class BankTransactionValueObject:
+    account_id: UUID
+    created: datetime
+    item_id: UUID
+    value: float
+    method: BankTransactionMethodEnum = field(default_factory=BankTransactionMethodEnum)
+
+
 @dataclass
 class BankAccountEntity(Entity):
     owner_id: UUID
@@ -48,23 +57,25 @@ class BankAccountEntity(Entity):
 
 @dataclass
 class BankDomainAggregate(Aggregate):
-    bank_accounts: List[BankAccountEntity]
+    bank_account: BankAccountEntity
     bank_transactions: List[BankTransactionEntity]
 
-    def _get_account(self, account_id: UUID) -> BankAccountEntity:
-        for account in self.bank_accounts:
-            if account.id == account_id:
-                return account
+    @classmethod
+    def create(cls, owner_id: UUID, is_overdraft_protected: bool):
+        account_entity = BankDomainFactory.build_bank_account_entity(
+            is_overdraft_protected=is_overdraft_protected,
+            owner_id=owner_id
+        )
+        return cls._create(
+            cls.Created,
+            id=account_entity.id,
+            bank_account=account_entity,
+            bank_transactions=[]
+        )
 
-        raise ValueError(f"No Account Matching: '{account_id}'")
-
-    def calculate_account_balance(self, account_id: UUID):
-        account_transactions = [
-            transaction for transaction in self.bank_transactions if transaction.account_id == account_id
-        ]
-
+    def calculate_account_balance(self):
         _balance = 0
-        for transaction in account_transactions:
+        for transaction in self.bank_transactions:
             if transaction.method == BankTransactionMethodEnum.add:
                 _balance += transaction.value
 
@@ -73,32 +84,31 @@ class BankDomainAggregate(Aggregate):
 
         return _balance
 
-    def get_bank_account_entity(self, entity_id: UUID):
-        return self._get_account(
-            account_id=entity_id
-        )
-
     def _apply_transaction_to_account(self, transaction: BankTransactionEntity):
-        account = self._get_account(account_id=transaction.account_id)
-        if account is None:
+
+        if transaction.account_id != self.bank_account.id:
             raise ValueError(f"Invalid AccountID='{transaction.account_id}' for Transaction='{transaction.id}'")
 
         self.bank_transactions.append(transaction)
 
-        account.balance = self.calculate_account_balance(account_id=account.id)
+        self.bank_account.balance = self.calculate_account_balance()
+
+    def get_transaction_by_id(self, transaction_id: UUID) -> BankTransactionValueObject:
+        for transaction in self.bank_transactions:
+            if transaction_id == transaction.id:
+                return BankTransactionValueObject(
+                    method=transaction.method,
+                    account_id=transaction.account_id,
+                    created=transaction.created,
+                    item_id=transaction.item_id,
+                    value=transaction.value
+                )
+
+        raise ValueError(f'Invalid TransactionID="{transaction_id}"')
 
     @event
     def apply_transaction_to_account(self, transaction: BankTransactionEntity):
         self._apply_transaction_to_account(transaction=transaction)
-
-    @event
-    def new_bank_account(self, owner_id: UUID, is_overdraft_protected: bool) -> UUID:
-        bank_account_entity = BankDomainFactory.build_bank_account_entity(
-            owner_id=owner_id,
-            is_overdraft_protected=is_overdraft_protected
-        )
-
-        self.bank_accounts.append(bank_account_entity)
 
     @event
     def new_transaction(
@@ -108,7 +118,6 @@ class BankDomainAggregate(Aggregate):
             value: float,
             account_id: UUID
     ):
-
         transaction = BankDomainFactory.build_bank_transaction_entity(
             item_id=item_id,
             method=method,
@@ -119,14 +128,12 @@ class BankDomainAggregate(Aggregate):
         self._apply_transaction_to_account(transaction=transaction)
 
     @event
-    def disable_account(self, account_id: UUID):
-        account = self._get_account(account_id=account_id)
-        account.state = BankAccountStateEnum.disabled
+    def disable_account(self):
+        self.bank_account.state = BankAccountStateEnum.disabled
 
     @event
-    def enable_account(self, account_id: UUID):
-        account = self._get_account(account_id=account_id)
-        account.state = BankAccountStateEnum.enabled
+    def enable_account(self):
+        self.bank_account.state = BankAccountStateEnum.enabled
 
 
 class BankDomainFactory:
@@ -205,12 +212,12 @@ class BankDomainFactory:
 
     @staticmethod
     def build_bank_domain_aggregate(
-            bank_accounts: List[BankAccountEntity],
-            bank_transactions: List[BankTransactionEntity]
+            owner_id: UUID,
+            is_overdraft_protected: bool
     ):
-        return BankDomainAggregate(
-            bank_accounts=bank_accounts,
-            bank_transactions=bank_transactions
+        return BankDomainAggregate.create(
+            owner_id=owner_id,
+            is_overdraft_protected=is_overdraft_protected,
         )
 
 

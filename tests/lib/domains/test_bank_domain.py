@@ -9,6 +9,7 @@ from boe.lib.domains.bank_domain import (
     BankDomainAggregate,
     BankDomainFactory,
     BankDomainRepository,
+    BankTransactionValueObject,
     BankAccountStateEnum
 )
 from pytest import fixture
@@ -58,18 +59,11 @@ def bank_transaction_entity_subtract_testable(bank_account_uuid, item_uuid_2) ->
 
 @fixture
 def bank_domain_aggregate_testable(
-        bank_account_entity_testable,
-        bank_transaction_entity_add_testable,
-        bank_transaction_entity_subtract_testable
+        bank_account_uuid
 ) -> BankDomainAggregate:
-    return BankDomainAggregate(
-        bank_accounts=[
-            bank_account_entity_testable
-        ],
-        bank_transactions=[
-            bank_transaction_entity_add_testable,
-            bank_transaction_entity_subtract_testable
-        ]
+    return BankDomainFactory.build_bank_domain_aggregate(
+        owner_id=bank_account_uuid,
+        is_overdraft_protected=True
     )
 
 
@@ -78,9 +72,7 @@ def bank_domain_aggregate_no_transactions_testable(
         bank_account_entity_testable
 ) -> BankDomainAggregate:
     return BankDomainAggregate(
-        bank_accounts=[
-            bank_account_entity_testable
-        ],
+        bank_account=bank_account_entity_testable,
         bank_transactions=[
 
         ]
@@ -89,28 +81,35 @@ def bank_domain_aggregate_no_transactions_testable(
 
 @fixture
 def bank_domain_aggregate_empty_testable(
-
+        bank_account_entity_testable
 ) -> BankDomainAggregate:
     return BankDomainAggregate(
-        bank_accounts=[
-
-        ],
+        bank_account=bank_account_entity_testable,
         bank_transactions=[
 
         ]
     )
 
 
-def test_bank_account_aggregate_when_calculating_account_balance(bank_domain_aggregate_testable, bank_account_uuid):
-    aggregate = bank_domain_aggregate_testable
-    balance = aggregate.calculate_account_balance(account_id=bank_account_uuid)
+def test_bank_account_aggregate_when_created(bank_domain_aggregate_testable):
+    aggregate: BankDomainAggregate = bank_domain_aggregate_testable
+    assert aggregate.id == aggregate.bank_account.id
 
-    assert balance == 90.0
+
+def test_bank_account_aggregate_when_calculating_account_balance(
+        bank_domain_aggregate_testable,
+        bank_transaction_entity_add_testable
+):
+    aggregate: BankDomainAggregate = bank_domain_aggregate_testable
+
+    aggregate.apply_transaction_to_account(bank_transaction_entity_add_testable)
+    balance = aggregate.calculate_account_balance()
+
+    assert balance == 100
 
 
 def test_bank_account_aggregate_when_applying_transaction(
         bank_domain_aggregate_no_transactions_testable,
-        bank_account_uuid,
         bank_transaction_entity_add_testable
 ):
     aggregate: BankDomainAggregate = bank_domain_aggregate_no_transactions_testable
@@ -118,9 +117,8 @@ def test_bank_account_aggregate_when_applying_transaction(
 
     aggregate.apply_transaction_to_account(transaction=transaction)
 
-    account_entity = aggregate.get_bank_account_entity(entity_id=bank_account_uuid)
     assert len(aggregate.pending_events) == 2
-    assert account_entity.balance == 100
+    assert aggregate.bank_account.balance == 100
 
 
 def test_bank_account_aggregate_when_applying_transaction_fails(
@@ -136,32 +134,13 @@ def test_bank_account_aggregate_when_applying_transaction_fails(
         aggregate.apply_transaction_to_account(transaction=transaction)
 
 
-def test_bank_account_aggregate_when_creating_new_account(bank_domain_aggregate_empty_testable, bank_account_uuid_2):
-    aggregate: BankDomainAggregate = bank_domain_aggregate_empty_testable
-
-    aggregate.new_bank_account(
-        owner_id=bank_account_uuid_2,
-        is_overdraft_protected=True
-    )
-
-    account = aggregate.get_bank_account_entity(entity_id=bank_account_uuid_2)
-
-    assert isinstance(account, BankAccountEntity)
-    assert len(aggregate.bank_accounts) == 1
-
-
 def test_bank_account_aggregate_when_new_transaction(
         bank_domain_aggregate_empty_testable,
         bank_account_entity_testable
 ):
     aggregate: BankDomainAggregate = bank_domain_aggregate_empty_testable
 
-    aggregate.new_bank_account(
-        owner_id=bank_account_entity_testable.owner_id,
-        is_overdraft_protected=bank_account_entity_testable.is_overdraft_protected
-    )
-
-    assert aggregate.version == 2
+    assert aggregate.version == 1
 
     aggregate.new_transaction(
         account_id=bank_account_entity_testable.owner_id,
@@ -171,35 +150,48 @@ def test_bank_account_aggregate_when_new_transaction(
 
     )
 
-    account = aggregate.get_bank_account_entity(entity_id=bank_account_entity_testable.owner_id)
-
-    assert account.balance == 10
-    assert account.id == bank_account_entity_testable.id
-    assert len(aggregate.pending_events) == 3
-    assert aggregate.version == 3
+    assert aggregate.bank_account.balance == 10
+    assert aggregate.bank_account.id == bank_account_entity_testable.id
+    assert len(aggregate.pending_events) == 2
+    assert aggregate.version == 2
 
 
 def test_bank_account_aggregate_when_disable_account(
         bank_domain_aggregate_no_transactions_testable,
-        bank_account_entity_testable
 ):
     aggregate: BankDomainAggregate = bank_domain_aggregate_no_transactions_testable
 
-    aggregate.disable_account(account_id=bank_account_entity_testable.id)
-    account = aggregate.get_bank_account_entity(entity_id=bank_account_entity_testable.id)
+    aggregate.disable_account()
 
-    assert account.state is BankAccountStateEnum.disabled
+    assert aggregate.bank_account.state is BankAccountStateEnum.disabled
 
 
 def test_bank_account_aggregate_when_enable_account(
-        bank_domain_aggregate_no_transactions_testable,
-        bank_account_entity_testable
+        bank_domain_aggregate_no_transactions_testable
 ):
     aggregate: BankDomainAggregate = bank_domain_aggregate_no_transactions_testable
 
-    aggregate.disable_account(account_id=bank_account_entity_testable.id)
-    aggregate.enable_account(account_id=bank_account_entity_testable.id)
+    aggregate.disable_account()
+    aggregate.enable_account()
 
-    account = aggregate.get_bank_account_entity(entity_id=bank_account_entity_testable.id)
+    assert aggregate.bank_account.state is BankAccountStateEnum.enabled
 
-    assert account.state is BankAccountStateEnum.enabled
+
+def test_bank_account_aggregate_when_fetching_transaction(
+        bank_domain_aggregate_testable,
+        bank_transaction_entity_add_testable
+):
+    aggregate: BankDomainAggregate = bank_domain_aggregate_testable
+    transaction: BankTransactionEntity = bank_transaction_entity_add_testable
+    aggregate.apply_transaction_to_account(transaction=transaction)
+    _transaction = aggregate.get_transaction_by_id(transaction_id=transaction.id)
+
+    assert isinstance(_transaction, BankTransactionValueObject)
+
+
+def test_bank_account_aggregate_when_fetching_transaction_fails(
+        bank_domain_aggregate_testable
+):
+    aggregate: BankDomainAggregate = bank_domain_aggregate_testable
+    with pytest.raises(ValueError):
+        aggregate.get_transaction_by_id(transaction_id=uuid4())
