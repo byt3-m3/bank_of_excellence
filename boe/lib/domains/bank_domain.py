@@ -214,7 +214,7 @@ class BankDomainFactory:
     def build_bank_domain_aggregate(
             owner_id: UUID,
             is_overdraft_protected: bool
-    ):
+    ) -> BankDomainAggregate:
         return BankDomainAggregate.create(
             owner_id=owner_id,
             is_overdraft_protected=is_overdraft_protected,
