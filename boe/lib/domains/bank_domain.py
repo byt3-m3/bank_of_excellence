@@ -29,6 +29,16 @@ class BankTransactionMethodEnum(Enum):
     subtract = 1
 
 
+@dataclass(frozen=True)
+class BankAccountTableModel:
+    id: UUID
+    owner_id: UUID
+    is_overdraft_protected: bool
+    state: BankAccountStateEnum
+    transactions: List['BankTransactionEntity']
+    balance: float
+
+
 @dataclass
 class BankTransactionEntity(Entity):
     account_id: UUID
@@ -230,31 +240,34 @@ class BankDomainWriteModel:
 
         self.db = get_database(client=self.client, db_name=APP_DB)
 
-    def save_bank_account(self, bank_account: BankAccountEntity) -> UUID:
+    def save_bank_aggregate(self, aggregate: BankDomainAggregate) -> UUID:
         collection = get_collection(database=self.db, collection=BANK_ACCOUNT_TABLE)
+        model = BankAccountTableModel(
+            id=aggregate.id,
+            is_overdraft_protected=aggregate.bank_account.is_overdraft_protected,
+            owner_id=aggregate.bank_account.owner_id,
+            state=aggregate.bank_account.state,
+            transactions=aggregate.bank_transactions,
+            balance=aggregate.bank_account.balance
+
+        )
+        item_data = serialize_aggregate(model)
+
         try:
-            add_item(collection=collection, item=serialize_aggregate(bank_account), key_id='id')
-            return bank_account.id
+
+            add_item(collection=collection, item=item_data, key_id='id')
+            return aggregate.id
 
         except DuplicateKeyError:
-            return self.update_bank_account(
-                bank_account=bank_account
+            result = update_item(
+                collection=collection,
+                item_id=aggregate.id,
+                new_values=item_data
             )
+            # if result.matched_count == 0:
+            #     raise Exception(f"No Records matching: '{aggregate.id}'")
 
-    def update_bank_account(self, bank_account: BankAccountEntity) -> UUID:
-        collection = get_collection(database=self.db, collection=BANK_ACCOUNT_TABLE)
-
-        new_data = serialize_aggregate(bank_account)
-
-        result = update_item(
-            collection=collection,
-            item_id=bank_account.id,
-            new_values=new_data
-        )
-        if result.matched_count == 0:
-            raise Exception(f"No Records matching: '{bank_account.id}'")
-
-        return bank_account.id
+            return aggregate.id
 
 
 class BankDomainQueryModel:
