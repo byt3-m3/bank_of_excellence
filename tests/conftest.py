@@ -1,15 +1,27 @@
+import os
 from uuid import UUID
 
 from pytest import fixture
+
+
+@fixture(autouse=True)
+def set_env():
+    INFRASTRUCTURE_FACTORY = "eventsourcing.sqlite:Factory"
+    SQLITE_DBNAME = "_db/test_event_db"
+
+    os.environ['INFRASTRUCTURE_FACTORY'] = INFRASTRUCTURE_FACTORY
+    os.environ['SQLITE_DBNAME'] = SQLITE_DBNAME
 
 
 @fixture
 def bank_account_uuid():
     return UUID("00000000-0000-0000-0000-000000000010")
 
+
 @fixture
 def bank_account_uuid_2():
     return UUID("00000000-0000-0000-0000-000000000011")
+
 
 @fixture
 def user_account_uuid():
@@ -19,6 +31,7 @@ def user_account_uuid():
 @fixture
 def item_uuid():
     return UUID("00000000-0000-0000-0000-000000000100")
+
 
 @fixture
 def item_uuid_2():
