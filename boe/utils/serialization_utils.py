@@ -2,8 +2,8 @@ from boe.lib.common_models import Entity
 from dataclasses import asdict, is_dataclass
 from enum import Enum
 from uuid import UUID
-
-
+from typing import Union
+from eventsourcing.domain import Aggregate
 def _serialize_dict(item: dict):
     for key, val in item.items():
         if isinstance(val, Enum):
@@ -19,7 +19,7 @@ def _serialize_list(items: list):
             _serialize_list(items=item)
 
 
-def serialize_aggregate(model: Entity):
+def serialize_aggregate(model: Union[Entity, Aggregate]):
     data = asdict(model)
 
     for key, val in data.items():
