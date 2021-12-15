@@ -2,4 +2,5 @@ from eventsourcing.domain import Snapshot
 
 
 def make_snapshot(aggregate):
-    return Snapshot.take(aggregate=aggregate)
+    snapshot = Snapshot.take(aggregate=aggregate)
+    return snapshot.mutate(None)
