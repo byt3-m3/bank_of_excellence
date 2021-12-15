@@ -1,19 +1,26 @@
+from datetime import datetime
+
 import pytest
-from pytest import fixture
 from boe.lib.domains.user_domain import (
-    FamilyAggregate,
-    UserAccountAggregate,
+    FamilyEntity,
+    UserAccountEntity,
     SubscriptionTypeEnum,
     UserDomainFactory,
-    AdultAccountDetail,
-    UserAccountTypeEnum,
     UserDomainWriteModel,
     UserDomainQueryModel,
     UserDomainRepository,
-    ChildAccountDetail
+    FamilyUserAggregate
 )
-from datetime import datetime
-from uuid import UUID
+from pytest import fixture
+
+
+@fixture
+def family_user_aggregate():
+    return UserDomainFactory.build_user_family_user_aggregate(
+        description='TEST_DESCRIPTION',
+        name="TEST_FAMILY",
+        subscription_type=SubscriptionTypeEnum.basic
+    )
 
 
 @fixture
@@ -32,7 +39,7 @@ def user_domain_query_model() -> UserDomainQueryModel:
 
 
 @fixture
-def adult_account_testable(uuid4_3) -> UserAccountAggregate:
+def adult_account_testable(uuid4_3) -> UserAccountEntity:
     return UserDomainFactory.rebuild_adult_account(
         first_name='TEST',
         last_name='TEST',
@@ -42,7 +49,7 @@ def adult_account_testable(uuid4_3) -> UserAccountAggregate:
 
 
 @fixture
-def child_account_testable(uuid4_4) -> UserAccountAggregate:
+def child_account_testable(uuid4_4) -> UserAccountEntity:
     return UserDomainFactory.rebuild_child_account(
         first_name='TEST',
         last_name='TEST',
@@ -55,7 +62,7 @@ def child_account_testable(uuid4_4) -> UserAccountAggregate:
 
 
 @fixture
-def family_testable(uuid4_1) -> FamilyAggregate:
+def family_testable(uuid4_1) -> FamilyEntity:
     return UserDomainFactory.rebuild_family(
         _id=uuid4_1,
         name='TEST',
@@ -65,158 +72,66 @@ def family_testable(uuid4_1) -> FamilyAggregate:
     )
 
 
-def test_adult_account_when_created(adult_account_testable):
-    account = adult_account_testable
+def test_family_user_aggregate_when_create(family_user_aggregate):
+    aggregate: FamilyUserAggregate = family_user_aggregate
 
-    assert account.account_type is UserAccountTypeEnum.adult
-    assert isinstance(account.account_detail, AdultAccountDetail)
-
-
-def test_child_account_when_created(child_account_testable):
-    account = child_account_testable
-
-    assert account.account_type is UserAccountTypeEnum.child
-    assert isinstance(account.account_detail, ChildAccountDetail)
+    assert aggregate.id == aggregate.family.id
+    assert isinstance(aggregate.member_map, dict)
 
 
-def test_family_when_created(family_testable):
-    family = family_testable
+def test_family_user_aggregate_when_adding_member(family_user_aggregate, adult_account_testable):
+    aggregate: FamilyUserAggregate = family_user_aggregate
+    aggregate.add_family_member(user_account=adult_account_testable)
 
-    assert family.subscription_type is SubscriptionTypeEnum.premium
-
-
-def test_family_when_adding_members(family_testable, child_account_testable, adult_account_testable):
-    family = family_testable
-    child_member = child_account_testable
-    adult_member = adult_account_testable
-
-    family.add_member(member=child_member)
-    family.add_member(member=adult_member)
-
-    assert len(family.members) == 2
+    assert len(aggregate.pending_events) == 2
+    assert len(aggregate.member_map) == 1
 
 
-def test_family_when_fetching_members(family_testable, child_account_testable):
-    family = family_testable
-    child_member = child_account_testable
-
-    family.add_member(child_member)
-
-    expectation = family.get_member(member_id=child_member.id)
-
-    assert isinstance(expectation, UserAccountAggregate)
-    assert expectation.account_type is UserAccountTypeEnum.child
-
-
-def test_family_when_fetching_member_is_invalid(family_testable, child_account_testable):
-    family = family_testable
-    child_member = child_account_testable
-
+def test_family_user_aggregate_when_adding_member_duplicate(family_user_aggregate, adult_account_testable):
+    aggregate: FamilyUserAggregate = family_user_aggregate
+    aggregate.add_family_member(user_account=adult_account_testable)
     with pytest.raises(ValueError):
-        family.get_member(member_id=child_member.id)
+        aggregate.add_family_member(user_account=adult_account_testable)
 
 
-def _test_user_domain_write_model_when_saving_user_account(adult_account_testable, child_account_testable):
-    # TODO: Needs Mocks
+def test_family_user_aggregate_when_removing_member(family_user_aggregate, adult_account_testable):
+    aggregate: FamilyUserAggregate = family_user_aggregate
+    aggregate.add_family_member(user_account=adult_account_testable)
+    aggregate.remove_family_member(user_id=adult_account_testable.id)
 
-    child_account = child_account_testable
-    adult_account = adult_account_testable
-
-    write_model = UserDomainWriteModel()
-
-    write_model.save_user_account(account=child_account)
-    write_model.save_user_account(account=adult_account)
+    assert len(aggregate.pending_events) == 3
+    assert len(aggregate.member_map) == 0
 
 
-def _test_user_domain_query_model_when_querying_by_account_id(user_domain_query_model):
-    # TODO: Needs Mocks
+def test_family_user_aggregate_when_changing_subscription_type(family_user_aggregate):
+    aggregate: FamilyUserAggregate = family_user_aggregate
 
-    account_id = UUID("4afbadc5-6522-4890-819e-fa003027280f")
+    assert aggregate.family.subscription_type is SubscriptionTypeEnum.basic
+    aggregate.change_subscription_type(subscription_type=SubscriptionTypeEnum.premium)
 
-    query_model = user_domain_query_model
-
-    model_dict = query_model.get_family_by_id(agg_id=account_id)
-    print(model_dict)
+    assert aggregate.family.subscription_type is SubscriptionTypeEnum.premium
 
 
-def _test_user_domain_repository_when_querying_by_account_id(user_domain_repository):
-    # TODO: Needs Mocks
+def test_family_user_aggregate_when_creating_new_adult_member(family_user_aggregate):
+    aggregate: FamilyUserAggregate = family_user_aggregate
+    aggregate.create_new_adult_member(
+        first_name='TEST_NAME',
+        last_name='LAST_NAME',
+        email='TEST@EMAIL.COM'
+    )
 
-    account_id = UUID("4afbadc5-6522-4890-819e-fa003027280f")
-
-    repo = user_domain_repository
-
-    model = repo.get_user_account(account_id=account_id)
-    print(model)
-
-
-def _test_user_domain_query_model_when_scan_user_table(user_domain_query_model):
-    # TODO: Needs Mocks
-
-    query_model = user_domain_query_model
-
-    items = query_model.scan_user_accounts()
-    print(items)
+    assert len(aggregate.member_map) == 1
 
 
-def _test_user_domain_repository_when_getting_all_accounts(user_domain_repository):
-    # TODO: Needs Mocks
+def test_family_user_aggregate_when_creating_new_child_member(family_user_aggregate):
+    aggregate: FamilyUserAggregate = family_user_aggregate
+    aggregate.create_new_child_member(
+        first_name='TEST_NAME',
+        last_name='LAST_NAME',
+        email='TEST@EMAIL.COM',
+        age=5,
+        dob=datetime(year=2014, month=12, day=20),
+        grade=5
+    )
 
-    repo = user_domain_repository
-
-    accounts = repo.get_user_accounts()
-    print(accounts)
-
-
-def _test_user_domain_write_model_when_saving_family(family_testable, user_domain_write_model):
-    # TODO: Needs Mocks
-
-    family = family_testable
-    write_model = user_domain_write_model
-
-    result = write_model.save_family(family=family)
-    print(result)
-
-
-def _test_user_domain_query_model_when_querying_family(user_domain_query_model):
-    query_model = user_domain_query_model
-
-    query_model.get_family_by_id(family_id=UUID("184abb3f-be96-471c-8e18-f3b479939492"))
-
-
-def _test_user_domain_repository_when_querying_family(user_domain_repository):
-    repo = user_domain_repository
-    model = repo.get_family(family_id=UUID("184abb3f-be96-471c-8e18-f3b479939492"))
-    print(model)
-
-
-def _test_user_domain_query_model_when_scanning_family(user_domain_query_model):
-    query_model = user_domain_query_model
-
-    items = query_model.scan_families()
-    print(items)
-
-
-def _test_user_domain_repo_when_scanning_family(user_domain_repository):
-    repo = user_domain_repository
-
-    models = repo.get_families()
-    print(models)
-
-
-def _test_user_domain_write_model_when_updating_user_account(user_domain_write_model, adult_account_testable):
-    print(adult_account_testable.id)
-    write_model = user_domain_write_model
-
-    adult_account_testable.account_detail.email = "new_email@test.com"
-
-    write_model.save_user_account(adult_account_testable)
-
-
-def _test_user_domain_write_model_when_updating_family(user_domain_write_model, family_testable):
-    print(family_testable.id)
-    write_model = user_domain_write_model
-
-    family_testable.name = "new_test_name"
-
-    write_model.save_family(family_testable)
+    assert len(aggregate.member_map) == 1
