@@ -11,7 +11,7 @@ from eventsourcing.persistence import Transcoding
 
 class BankAccountEntityTranscoding(Transcoding):
     type = BankAccountEntity
-    name = "role"
+    name = "BankAccountEntity"
 
     def encode(self, o: BankAccountEntity) -> str:
         return asdict(o)
@@ -22,7 +22,7 @@ class BankAccountEntityTranscoding(Transcoding):
 
 class BankTransactionEntityTranscoding(Transcoding):
     type = BankTransactionEntity
-    name = "role"
+    name = "BankTransactionEntity"
 
     def encode(self, o: BankTransactionEntity) -> str:
         return asdict(o)
@@ -33,21 +33,21 @@ class BankTransactionEntityTranscoding(Transcoding):
 
 class BankAccountStateEnumTranscoding(Transcoding):
     type = BankAccountStateEnum
-    name = "role"
+    name = "BankAccountStateEnum"
 
     def encode(self, o: BankAccountStateEnum) -> int:
         return o.value
 
-    def decode(self, d: dict):
-        return BankAccountStateEnum(**d)
+    def decode(self, d: int):
+        return BankAccountStateEnum(d)
 
 
 class BankTransactionMethodEnumTranscoding(Transcoding):
     type = BankTransactionMethodEnum
-    name = "role"
+    name = "BankTransactionMethodEnum"
 
     def encode(self, o: BankTransactionMethodEnum) -> int:
         return o.value
 
-    def decode(self, d: dict):
-        return BankTransactionMethodEnum(**d)
+    def decode(self, d: int):
+        return BankTransactionMethodEnum(d)
