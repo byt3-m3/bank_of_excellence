@@ -5,13 +5,17 @@ from boe.applications.user_manager_app import (
     UserManagerApp,
     NewFamilyEvent,
     SubscriptionTypeEnum,
-    NewChildAccountEvent
+    UserManagerAppEventFactory
 )
-
 from boe.lib.domains.user_domain import (
- UserAccountEntity
+    UserAccountEntity
 )
 from pytest import fixture
+
+
+@fixture
+def family_uuid():
+    return UUID("22d3057e84424584b81f2a5d8b54319c")
 
 
 @fixture
@@ -20,9 +24,17 @@ def user_manager_app_testable():
 
 
 @fixture
-def new_child_account_event():
-    return NewChildAccountEvent(
-        family_id=UUID("22d3057e84424584b81f2a5d8b54319c"),
+def new_family_subscription_change_event(family_uuid):
+    return UserManagerAppEventFactory.build_family_subscription_change_event(
+        family_id=family_uuid,
+        subscription_type=SubscriptionTypeEnum.premium
+    )
+
+
+@fixture
+def new_child_account_event(family_uuid):
+    return UserManagerAppEventFactory.build_new_child_account_event(
+        family_id=family_uuid,
         first_name='TEST_NAME',
         last_name='TEST_NAME',
         email='TEST_EMAIL',
@@ -34,7 +46,7 @@ def new_child_account_event():
 
 @fixture
 def new_family_app_event_basic():
-    return NewFamilyEvent(
+    return UserManagerAppEventFactory.build_new_family_event(
         description='TEST_DESCRIPTION',
         name='TEST_NAME',
         subscription_type=SubscriptionTypeEnum.basic
@@ -72,3 +84,13 @@ def test_user_manager_app_when_handling_new_child_account_event(
 
     account = app.get_user_account(family_id=event.family_id, account_id=UUID("0886360ea49a40b1b0f8e0d58079a316"))
     assert isinstance(account, UserAccountEntity)
+
+
+def test_user_manager_app_when_handling_family_subscription_change_event(
+        user_manager_app_testable,
+        new_family_subscription_change_event
+):
+    app = user_manager_app_testable
+    event = new_family_subscription_change_event
+
+    app.handle_family_subscription_type_change_event(event=event)
