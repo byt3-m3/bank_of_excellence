@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from datetime import datetime
 from enum import Enum
 from typing import List, Union, Dict
@@ -8,7 +8,8 @@ from boe.env import (
     MONGO_HOST,
     MONGO_PORT,
     APP_DB,
-    USER_ACCOUNT_TABLE,
+    CHILD_ACCOUNT_TABLE,
+    ADULT_ACCOUNT_TABLE,
     FAMILY_TABLE
 )
 from boe.lib.common_models import Entity
@@ -34,6 +35,36 @@ class UserAccountTypeEnum(Enum):
 class SubscriptionTypeEnum(Enum):
     basic = 0
     premium = 1
+
+
+@dataclass(frozen=True)
+class FamilyTableModel:
+    _id: UUID
+    family_id: UUID
+    members: List[UUID]
+    subscription_type: int
+
+
+@dataclass(frozen=True)
+class AdultAccountTableModel:
+    _id: UUID
+    user_id: UUID
+    first_name: str
+    last_name: str
+    email: str
+    family_id: UUID
+
+
+@dataclass(frozen=True)
+class ChildAccountTableModel:
+    _id: UUID
+    user_id: UUID
+    first_name: str
+    last_name: str
+    dob: datetime
+    age: int
+    grade: int
+    family_id: UUID
 
 
 @dataclass
@@ -74,11 +105,14 @@ class FamilyEntity(Entity):
 @dataclass
 class FamilyUserAggregate(Aggregate):
     family: FamilyEntity
-    member_map: Dict[UUID, UserAccountEntity]
+    member_map: Dict[UUID, dict]
 
     def _add_family_member(self, user_account: UserAccountEntity):
         if user_account.id not in self.member_map:
-            self.member_map[user_account.id] = user_account
+            if isinstance(user_account, UserAccountEntity):
+                self.member_map[user_account.id] = asdict(user_account)
+            else:
+                raise TypeError(f"Invalid type for user_account, Expected: {UserAccountEntity}")
         else:
             raise ValueError(f"AccountID={user_account.id} already member")
 
@@ -159,28 +193,74 @@ class UserDomainWriteModel:
 
         self.db = get_database(client=self.client, db_name=APP_DB)
 
-    def save_user_account(self, account: UserAccountEntity) -> UUID:
-        collection = get_collection(database=self.db, collection=USER_ACCOUNT_TABLE)
+    def save_family_user_aggregate(self, aggregate: FamilyUserAggregate):
+        family_table_model = FamilyTableModel(
+            _id=aggregate.id,
+            family_id=aggregate.family.id,
+            members=[
+                member for member in aggregate.member_map.keys()
+            ],
+            subscription_type=aggregate.family.subscription_type.value
+        )
+
+        for member in aggregate.member_map.values():
+            if member['account_type'] == UserAccountTypeEnum.child:
+                print(member)
+
+        child_table_models = [
+            ChildAccountTableModel(
+                first_name=member['account_detail']['first_name'],
+                last_name=member['account_detail']['last_name'],
+                age=member['account_detail']['age'],
+                _id=member['id'],
+                grade=member['account_detail']['grade'],
+                dob=member['account_detail']['dob'],
+                user_id=member['id'],
+                family_id=aggregate.id
+            ) for member in aggregate.member_map.values() if member['account_type'] == UserAccountTypeEnum.child
+        ]
+
+        adult_table_models = [
+            AdultAccountTableModel(
+                first_name=member['account_detail']['first_name'],
+                last_name=member['account_detail']['last_name'],
+                email=member['account_detail']['email'],
+                user_id=member['id'],
+                _id=member['id'],
+                family_id=aggregate.id
+
+            )
+            for member in aggregate.member_map.values() if member['account_type'] == UserAccountTypeEnum.adult
+        ]
+
+        family_collection = get_collection(database=self.db, collection=FAMILY_TABLE)
+        child_account_collection = get_collection(database=self.db, collection=CHILD_ACCOUNT_TABLE)
+        adult_account_collection = get_collection(database=self.db, collection=ADULT_ACCOUNT_TABLE)
+
+        serialized_family_table_model = serialize_aggregate(family_table_model)
         try:
-            add_item(collection=collection, item=serialize_aggregate(account), key_id='id')
-            return account.id
+            add_item(collection=family_collection, item=serialized_family_table_model)
+
         except DuplicateKeyError:
-            result = update_item(collection=collection, item_id=account.id, new_values=serialize_aggregate(account))
-            if result.matched_count == 0:
-                raise Exception(f"No Records matching: '{account.id}'")
+            update_item(collection=family_collection, item_id=aggregate.id, new_values=serialized_family_table_model)
 
-        return account.id
+        for child_table_model in child_table_models:
+            serialized_child_table_model = serialize_aggregate(child_table_model)
+            try:
+                add_item(collection=child_account_collection, item=serialized_child_table_model)
 
-    def save_family(self, family: FamilyEntity) -> UUID:
-        try:
-            collection = get_collection(database=self.db, collection=FAMILY_TABLE)
-            add_item(collection=collection, item=serialize_aggregate(family), key_id='id')
-        except DuplicateKeyError:
-            result = update_item(collection=collection, item_id=family.id, new_values=serialize_aggregate(family))
-            if result.matched_count == 0:
-                raise Exception(f"No Records matching: '{family.id}'")
+            except DuplicateKeyError:
+                update_item(collection=child_account_collection, item_id=child_table_model.user_id,
+                            new_values=serialized_child_table_model)
 
-        return family.id
+        for adult_table_model in adult_table_models:
+            serialized_adult_table_model = serialize_aggregate(adult_table_model)
+            try:
+                add_item(collection=adult_account_collection, item=serialized_adult_table_model)
+
+            except DuplicateKeyError:
+                update_item(collection=adult_account_collection, item_id=adult_table_model.user_id,
+                            new_values=serialized_adult_table_model)
 
 
 class UserDomainQueryModel:

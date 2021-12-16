@@ -3,7 +3,8 @@ import os
 STAGE = os.getenv("STAGE", "TEST")
 _BANK_ACCOUNT_TABLE_ID = os.getenv("BANK_ACCOUNT_TABLE_ID", "bank_account_table")
 _BANK_TRANSACTION_TABLE_ID = os.getenv("BANK_ACCOUNT_TABLE_ID", "bank_transaction_table")
-_USER_ACCOUNT_TABLE_ID = os.getenv("USER_ACCOUNT_TABLE_ID", "user_account_table")
+_CHILD_ACCOUNT_TABLE_ID = os.getenv("CHILD_ACCOUNT_TABLE_ID", "child_account_table")
+_ADULT_ACCOUNT_TABLE_ID = os.getenv("ADULT_ACCOUNT_TABLE_ID", "adult_account_table")
 _FAMILY_TABLE_ID = os.getenv("USER_ACCOUNT_TABLE_ID", "family_table")
 
 AMQP_USER = os.getenv("AMQP_USER")
@@ -23,5 +24,6 @@ APP_DB = f'{STAGE}_{_APP_DB}'.upper()
 
 BANK_ACCOUNT_TABLE = f'{STAGE}_{_BANK_ACCOUNT_TABLE_ID}'.upper()
 BANK_TRANSACTION_TABLE = f'{STAGE}_{_BANK_TRANSACTION_TABLE_ID}'.upper()
-USER_ACCOUNT_TABLE = f'{STAGE}_{_USER_ACCOUNT_TABLE_ID}'.upper()
+CHILD_ACCOUNT_TABLE = f'{STAGE}_{_CHILD_ACCOUNT_TABLE_ID}'.upper()
+ADULT_ACCOUNT_TABLE = f'{STAGE}_{_ADULT_ACCOUNT_TABLE_ID}'.upper()
 FAMILY_TABLE = f'{STAGE}_{_FAMILY_TABLE_ID}'.upper()
