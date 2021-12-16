@@ -3,10 +3,10 @@ import json
 from boe.applications import (
     BankManagerApp,
     EstablishNewAccountEvent,
-NewTransactionEvent
+    NewTransactionEvent
 
 )
-from boe.applications.bank_manager_app import EventFactory
+from boe.applications.bank_domain_apps import BankDomainAppEventFactory
 from boe.env import AMPQ_URL, BANK_MANAGER_APP_QUEUE
 from cbaxter1988_utils.log_utils import get_logger
 from cbaxter1988_utils.pika_utils import make_basic_pika_consumer
@@ -28,11 +28,11 @@ bank_manager_app = BankManagerApp()
 event_handler_map = {
     'EstablishNewAccountEvent': {
         "handler": bank_manager_app.handle_establish_new_account_event,
-        "event_factory": EventFactory.build_establish_new_account_event
+        "event_factory": BankDomainAppEventFactory.build_establish_new_account_event
     },
     'NewTransactionEvent': {
         "handler": bank_manager_app.handle_new_transaction_event,
-        "event_factory": EventFactory.build_new_transaction_event
+        "event_factory": BankDomainAppEventFactory.build_new_transaction_event
     }
 }
 

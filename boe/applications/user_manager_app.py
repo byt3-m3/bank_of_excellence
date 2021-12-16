@@ -66,7 +66,7 @@ class UserManagerAppEventFactory:
 
     @staticmethod
     def build_new_child_account_event(
-            family_id: UUID,
+            family_id: str,
             age: int,
             dob: datetime,
             last_name: str,
@@ -75,7 +75,7 @@ class UserManagerAppEventFactory:
             grade: int
     ):
         return NewChildAccountEvent(
-            family_id=family_id,
+            family_id=UUID(family_id),
             age=age,
             dob=dob,
             last_name=last_name,
@@ -86,11 +86,11 @@ class UserManagerAppEventFactory:
 
     @staticmethod
     def build_family_subscription_change_event(
-            family_id: UUID,
+            family_id: str,
             subscription_type: Union[int, SubscriptionTypeEnum]
     ):
         return FamilySubscriptionChangeEvent(
-            family_id=family_id,
+            family_id=UUID(family_id),
             subscription_type=SubscriptionTypeEnum(subscription_type)
 
         )
