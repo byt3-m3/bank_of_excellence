@@ -6,6 +6,7 @@ _BANK_TRANSACTION_TABLE_ID = os.getenv("BANK_ACCOUNT_TABLE_ID", "bank_transactio
 _CHILD_ACCOUNT_TABLE_ID = os.getenv("CHILD_ACCOUNT_TABLE_ID", "child_account_table")
 _ADULT_ACCOUNT_TABLE_ID = os.getenv("ADULT_ACCOUNT_TABLE_ID", "adult_account_table")
 _FAMILY_TABLE_ID = os.getenv("USER_ACCOUNT_TABLE_ID", "family_table")
+_STORE_TABLE_ID = os.getenv("STORE_TABLE_ID", "store_table")
 
 AMQP_USER = os.getenv("AMQP_USER")
 AMQP_PW = os.getenv("AMQP_PW")
@@ -27,3 +28,4 @@ BANK_TRANSACTION_TABLE = f'{STAGE}_{_BANK_TRANSACTION_TABLE_ID}'.upper()
 CHILD_ACCOUNT_TABLE = f'{STAGE}_{_CHILD_ACCOUNT_TABLE_ID}'.upper()
 ADULT_ACCOUNT_TABLE = f'{STAGE}_{_ADULT_ACCOUNT_TABLE_ID}'.upper()
 FAMILY_TABLE = f'{STAGE}_{_FAMILY_TABLE_ID}'.upper()
+STORE_TABLE = f'{STAGE}_{_STORE_TABLE_ID}'.upper()
