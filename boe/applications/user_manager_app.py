@@ -7,10 +7,18 @@ from boe.applications.transcodings import (
     FamilyEntityTranscoding,
     UserAccountEntityTranscoding,
     SubscriptionTypeEnumTranscoding,
-    UserAccountTypeEnumTranscoding
+    UserAccountTypeEnumTranscoding,
+    ChildAccountDetailTranscoding,
+    AdultAccountDetailTranscoding,
+    UserAccountDetailTranscoding
 )
 from boe.lib.common_models import AppEvent
-from boe.lib.domains.user_domain import UserDomainFactory, SubscriptionTypeEnum, FamilyUserAggregate
+from boe.lib.domains.user_domain import (
+    UserDomainFactory,
+    SubscriptionTypeEnum,
+    FamilyUserAggregate,
+    UserDomainWriteModel
+)
 from cbaxter1988_utils.log_utils import get_logger
 from eventsourcing.application import Application
 from eventsourcing.persistence import Transcoder
@@ -93,6 +101,7 @@ class UserManagerApp(Application):
     def __init__(self):
         super().__init__()
         self.factory = UserDomainFactory()
+        self.write_model = UserDomainWriteModel()
 
     def register_transcodings(self, transcoder: Transcoder):
         super().register_transcodings(transcoder)
@@ -100,6 +109,9 @@ class UserManagerApp(Application):
         transcoder.register(UserAccountEntityTranscoding())
         transcoder.register(SubscriptionTypeEnumTranscoding())
         transcoder.register(UserAccountTypeEnumTranscoding())
+        transcoder.register(ChildAccountDetailTranscoding())
+        transcoder.register(AdultAccountDetailTranscoding())
+        transcoder.register(UserAccountDetailTranscoding())
 
     def _get_family_aggregate(self, family_id: UUID) -> FamilyUserAggregate:
         return self.repository.get(aggregate_id=family_id)
@@ -114,14 +126,12 @@ class UserManagerApp(Application):
             name=event.name,
             subscription_type=event.subscription_type
         )
-
+        self.write_model.save_family_user_aggregate(aggregate=family)
         self.save(family)
-
         return family.id
 
     def handle_new_child_account_event(self, event: NewChildAccountEvent) -> UUID:
         aggregate: FamilyUserAggregate = self.repository.get(aggregate_id=event.family_id)
-
         child_account = self.factory.build_child_account(
             age=event.age,
             dob=event.dob,
@@ -132,7 +142,7 @@ class UserManagerApp(Application):
         )
 
         aggregate.add_family_member(user_account=child_account)
-
+        self.write_model.save_family_user_aggregate(aggregate=aggregate)
         self.save(aggregate)
         return aggregate.id
 
@@ -143,6 +153,7 @@ class UserManagerApp(Application):
             return
 
         aggregate.change_subscription_type(subscription_type=event.subscription_type)
+        self.write_model.save_family_user_aggregate(aggregate=aggregate)
         self.save(aggregate)
 
         return aggregate.id

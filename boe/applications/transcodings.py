@@ -10,9 +10,45 @@ from boe.lib.domains.user_domain import (
     FamilyEntity,
     UserAccountEntity,
     SubscriptionTypeEnum,
+    ChildAccountDetail,
+    AdultAccountDetail,
+    UserAccountDetail,
     UserAccountTypeEnum
 )
 from eventsourcing.persistence import Transcoding
+
+
+class UserAccountDetailTranscoding(Transcoding):
+    type = AdultAccountDetail
+    name = "AdultAccountDetail"
+
+    def encode(self, o: UserAccountDetail) -> str:
+        return asdict(o)
+
+    def decode(self, d: dict):
+        return UserAccountDetail(**d)
+
+
+class AdultAccountDetailTranscoding(Transcoding):
+    type = AdultAccountDetail
+    name = "AdultAccountDetail"
+
+    def encode(self, o: AdultAccountDetail) -> str:
+        return asdict(o)
+
+    def decode(self, d: dict):
+        return AdultAccountDetail(**d)
+
+
+class ChildAccountDetailTranscoding(Transcoding):
+    type = ChildAccountDetail
+    name = "ChildAccountDetail"
+
+    def encode(self, o: ChildAccountDetail) -> str:
+        return asdict(o)
+
+    def decode(self, d: dict):
+        return ChildAccountDetail(**d)
 
 
 class UserAccountTypeEnumTranscoding(Transcoding):
