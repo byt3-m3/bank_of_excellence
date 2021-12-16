@@ -1,9 +1,8 @@
-from pytest import fixture
 from boe.lib.domains.store_domain import (
     StoreDomainFactory,
-    StoreItemEntity,
-
+    StoreDomainWriteModel
 )
+from pytest import fixture
 
 
 @fixture
@@ -48,3 +47,21 @@ def test_store_aggregate_when_removing_store_item(store_aggregate_testable):
 
     assert len(aggregate.store_items) == 0
     assert len(aggregate.pending_events) == 3
+
+
+def test_store_domain_write_model_when_saving_aggregate(store_aggregate_testable):
+    store_aggregate = store_aggregate_testable
+
+    store_aggregate.new_store_item(
+        name="TEST_ITEM",
+        value=5,
+        description="Test descriptions"
+    )
+    store_aggregate.new_store_item(
+        name="TEST_ITEM",
+        value=6,
+        description="Test descriptions"
+    )
+
+    write_model = StoreDomainWriteModel()
+    write_model.save_store_aggregate(aggregate=store_aggregate)

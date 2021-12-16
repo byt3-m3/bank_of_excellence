@@ -1,8 +1,25 @@
-from boe.lib.common_models import Entity
-from uuid import UUID, uuid4
-from typing import Dict
-from eventsourcing.domain import Aggregate, event
 from dataclasses import dataclass, asdict
+from typing import Dict, List
+from uuid import UUID, uuid4
+
+from boe.env import MONGO_HOST, MONGO_PORT, APP_DB, STORE_TABLE
+from boe.lib.common_models import Entity
+from boe.utils.serialization_utils import serialize_aggregate
+from cbaxter1988_utils.pymongo_utils import (
+    add_item,
+    update_item,
+    get_client,
+    get_database,
+    get_collection
+)
+from eventsourcing.domain import Aggregate, event
+from pymongo.errors import DuplicateKeyError
+
+
+@dataclass(frozen=True)
+class StoreTableModel:
+    store_id: UUID
+    store_items: List[dict]
 
 
 @dataclass
@@ -21,6 +38,15 @@ class StoreEntity(Entity):
 class StoreAggregate(Aggregate):
     store: StoreEntity
     store_item_map: Dict[UUID, dict]
+
+    @classmethod
+    def create(cls, store: StoreEntity, store_item_map: Dict[UUID, dict]):
+        return cls._create(
+            cls.Created,
+            id=store.family_id,
+            store=store,
+            store_item_map=store_item_map
+        )
 
     def _update_store_item_map(self, item: StoreItemEntity):
         if item.id not in self.store_item_map.keys():
@@ -50,6 +76,30 @@ class StoreAggregate(Aggregate):
         self.store_item_map.pop(item_id)
 
 
+class StoreDomainWriteModel:
+
+    def __init__(self):
+        self.client = get_client(
+            db_host=MONGO_HOST,
+            db_port=MONGO_PORT
+        )
+
+        self.db = get_database(client=self.client, db_name=APP_DB)
+
+    def save_store_aggregate(self, aggregate: StoreAggregate):
+        collection = get_collection(database=self.db, collection=STORE_TABLE)
+
+        model = StoreTableModel(
+            store_id=aggregate.id,
+            store_items=aggregate.store_items
+        )
+        serialized_data = serialize_aggregate(model=model)
+        try:
+            add_item(collection=collection, item=serialized_data, key_id='store_id')
+        except DuplicateKeyError:
+            update_item(collection=collection, item_id=aggregate.id, new_values=serialized_data)
+
+
 class StoreDomainFactory:
     @staticmethod
     def build_store_item_entity(
@@ -73,7 +123,7 @@ class StoreDomainFactory:
 
     @staticmethod
     def build_store_aggregate(family_id: UUID) -> StoreAggregate:
-        return StoreAggregate(
+        return StoreAggregate.create(
             store=StoreDomainFactory.build_store_entity(
                 family_id=family_id
             ),
