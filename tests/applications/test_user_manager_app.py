@@ -75,22 +75,38 @@ def _test_user_manager_app_when_handling_new_family_app_event(
 
 def test_user_manager_app_when_handling_new_child_account_event(
         user_manager_app_testable,
-        new_child_account_event
+        new_family_app_event_basic
 ):
     app = user_manager_app_testable
-    event = new_child_account_event
+    new_family_event = new_family_app_event_basic
 
-    app.handle_new_child_account_event(event=event)
+    aggregate_id = app.handle_new_family_event(event=new_family_event)
 
-    # account = app.get_user_account(family_id=event.family_id, account_id=UUID("0886360ea49a40b1b0f8e0d58079a316"))
-    # assert isinstance(account, UserAccountEntity)
+    new_child_account_event = UserManagerAppEventFactory.build_new_child_account_event(
+        family_id=str(aggregate_id),
+        age=7,
+        dob=datetime.datetime(month=12, day=20, year=2014),
+        grade=2,
+        email='test_email',
+        first_name='test_firstname',
+        last_name='test_lastname'
+    )
+
+    app.handle_new_child_account_event(event=new_child_account_event)
 
 
 def test_user_manager_app_when_handling_family_subscription_change_event(
         user_manager_app_testable,
-        new_family_subscription_change_event
+        new_family_app_event_basic
 ):
     app = user_manager_app_testable
-    event = new_family_subscription_change_event
+    new_family_event = new_family_app_event_basic
 
-    app.handle_family_subscription_type_change_event(event=event)
+    aggregate_id = app.handle_new_family_event(event=new_family_event)
+
+    sub_change_event = UserManagerAppEventFactory.build_family_subscription_change_event(
+        family_id=str(aggregate_id),
+        subscription_type=SubscriptionTypeEnum.premium
+    )
+
+    app.handle_family_subscription_type_change_event(event=sub_change_event)

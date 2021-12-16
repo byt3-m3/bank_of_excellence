@@ -33,7 +33,7 @@ class NewTransactionEvent(AppEvent):
     value: float
 
 
-class EventFactory:
+class BankDomainAppEventFactory:
     @staticmethod
     def build_establish_new_account_event(owner_id: str, is_overdraft_protected: bool):
         return EstablishNewAccountEvent(
@@ -92,10 +92,9 @@ class BankManagerApp(Application):
             owner_id=event.owner_id,
             is_overdraft_protected=event.is_overdraft_protected
         )
-        # snapshot = make_snapshot(aggregate)
-        # print(snapshot)
+
         self.write_model.save_bank_aggregate(aggregate=aggregate)
-        print(aggregate)
+
         self.save(aggregate)
         return aggregate.id
 
@@ -106,9 +105,11 @@ class BankManagerApp(Application):
             account_id=event.account_id,
             value=event.value
         )
+
         aggregate: BankDomainAggregate = self.repository.get(aggregate_id=event.account_id)
         aggregate.apply_transaction_to_account(transaction=transaction)
 
         snapshot = make_snapshot(aggregate)
         self.write_model.save_bank_aggregate(aggregate=snapshot)
         self.save(aggregate)
+        return aggregate.id

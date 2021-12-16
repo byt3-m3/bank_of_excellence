@@ -264,8 +264,6 @@ class BankDomainWriteModel:
                 item_id=aggregate.id,
                 new_values=item_data
             )
-            # if result.matched_count == 0:
-            #     raise Exception(f"No Records matching: '{aggregate.id}'")
 
             return aggregate.id
 
