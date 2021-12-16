@@ -15,7 +15,23 @@ from boe.lib.domains.user_domain import (
     UserAccountDetail,
     UserAccountTypeEnum
 )
+from boe.lib.domains.store_domain import (
+    StoreEntity
+)
+
 from eventsourcing.persistence import Transcoding
+
+
+class StoreEntityTranscoding(Transcoding):
+    type = StoreEntity
+    name = "StoreEntity"
+
+    def encode(self, o: StoreEntity) -> str:
+        return asdict(o)
+
+    def decode(self, d: dict):
+        return StoreEntity(**d)
+
 
 
 class UserAccountDetailTranscoding(Transcoding):
