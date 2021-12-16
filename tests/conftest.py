@@ -4,7 +4,7 @@ from uuid import UUID
 from pytest import fixture
 
 
-@fixture(autouse=True)
+@fixture()
 def set_env():
     INFRASTRUCTURE_FACTORY = "eventsourcing.sqlite:Factory"
     SQLITE_DBNAME = "_db/test_event_db"
