@@ -8,11 +8,11 @@ from boe.lib.domains.store_domain import (
     StoreAggregate,
     StoreDomainFactory
 )
-from cbaxter1988_utils.log_utils import get_logger
 from eventsourcing.application import Application
 from eventsourcing.persistence import Transcoder
+from logging import getLogger
 
-logger = get_logger("StoreManagerApp")
+logger = getLogger("StoreManagerApp")
 
 
 @dataclass(frozen=True)
