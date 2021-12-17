@@ -2,9 +2,7 @@ import json
 import os
 
 from boe.applications import (
-    BankManagerApp,
-    EstablishNewAccountEvent,
-    NewTransactionEvent
+    BankManagerApp
 
 )
 from boe.applications.bank_domain_apps import BankDomainAppEventFactory
