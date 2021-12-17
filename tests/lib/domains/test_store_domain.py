@@ -23,10 +23,15 @@ def store_aggregate_testable(uuid4_4):
 
 def test_store_aggregate_when_creating_new_item(store_aggregate_testable):
     aggregate = store_aggregate_testable
-    aggregate.new_store_item(
+
+    store_item = StoreDomainFactory.build_store_item_entity(
         name='TV Time',
         value=10,
-        description="TV time for your kid"
+        description='TV time for your kid'
+    )
+
+    aggregate.new_store_item(
+        store_item=store_item
     )
 
     assert len(aggregate.store_items) == 1
@@ -35,10 +40,14 @@ def test_store_aggregate_when_creating_new_item(store_aggregate_testable):
 
 def test_store_aggregate_when_removing_store_item(store_aggregate_testable):
     aggregate = store_aggregate_testable
-    aggregate.new_store_item(
+    store_item = StoreDomainFactory.build_store_item_entity(
         name='TV Time',
         value=10,
-        description="TV time for your kid"
+        description='TV time for your kid'
+    )
+
+    aggregate.new_store_item(
+        store_item=store_item
     )
 
     item_ids = aggregate.store_item_ids
@@ -52,15 +61,23 @@ def test_store_aggregate_when_removing_store_item(store_aggregate_testable):
 def test_store_domain_write_model_when_saving_aggregate(store_aggregate_testable):
     store_aggregate = store_aggregate_testable
 
+    store_item_1 = StoreDomainFactory.build_store_item_entity(
+        name='TV Time',
+        value=10,
+        description='TV time for your kid'
+    )
+
+    store_item_2 = StoreDomainFactory.build_store_item_entity(
+        name='IPAD Time',
+        value=6,
+        description='IPAD time for your kid'
+    )
+
     store_aggregate.new_store_item(
-        name="TEST_ITEM",
-        value=5,
-        description="Test descriptions"
+        store_item=store_item_1
     )
     store_aggregate.new_store_item(
-        name="TEST_ITEM",
-        value=6,
-        description="Test descriptions"
+        store_item=store_item_2
     )
 
     write_model = StoreDomainWriteModel()
