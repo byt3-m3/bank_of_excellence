@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from uuid import UUID
 
-from boe.applications.transcodings import StoreEntityTranscoding
+from boe.applications.transcodings import StoreEntityTranscoding, StoreItemEntityTranscoding
 from boe.lib.common_models import AppEvent
 from boe.lib.domains.store_domain import (
     StoreDomainWriteModel,
@@ -63,6 +63,7 @@ class StoreManagerApp(Application):
     def register_transcodings(self, transcoder: Transcoder):
         super().register_transcodings(transcoder)
         transcoder.register(StoreEntityTranscoding())
+        transcoder.register(StoreItemEntityTranscoding())
 
     def handle_new_store_event(self, event: NewStoreEvent) -> UUID:
         store_aggregate = self.factory.build_store_aggregate(
