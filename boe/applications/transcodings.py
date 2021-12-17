@@ -6,6 +6,10 @@ from boe.lib.domains.bank_domain import (
     BankTransactionMethodEnum,
     BankAccountStateEnum
 )
+from boe.lib.domains.store_domain import (
+    StoreEntity,
+    StoreItemEntity
+)
 from boe.lib.domains.user_domain import (
     FamilyEntity,
     UserAccountEntity,
@@ -16,6 +20,28 @@ from boe.lib.domains.user_domain import (
     UserAccountTypeEnum
 )
 from eventsourcing.persistence import Transcoding
+
+
+class StoreItemEntityTranscoding(Transcoding):
+    type = StoreItemEntity
+    name = "StoreItemEntity"
+
+    def encode(self, o: StoreItemEntity) -> str:
+        return asdict(o)
+
+    def decode(self, d: dict):
+        return StoreItemEntity(**d)
+
+
+class StoreEntityTranscoding(Transcoding):
+    type = StoreEntity
+    name = "StoreEntity"
+
+    def encode(self, o: StoreEntity) -> str:
+        return asdict(o)
+
+    def decode(self, d: dict):
+        return StoreEntity(**d)
 
 
 class UserAccountDetailTranscoding(Transcoding):
