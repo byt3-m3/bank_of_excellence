@@ -41,10 +41,12 @@ def on_message_callback(ch: BlockingChannel, method: Basic.Deliver, properties: 
         handler = event_handler_map.get(event_name)['handler']
         event_factory = event_handler_map.get(event_name)['event_factory']
         _event = event_factory(**payload)
+        try:
+            result = handler(event=_event)
 
-        result = handler(event=_event)
-
-        logger.info(f'Processed ApplicationEvent={_event} - Handler={handler}')
+            logger.info(f'Processed ApplicationEvent={_event} - Handler={handler}')
+        except Exception:
+            ch.basic_nack(delivery_tag=method.delivery_tag)
 
     ch.basic_ack(delivery_tag=method.delivery_tag)
 
