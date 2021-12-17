@@ -87,8 +87,9 @@ class StoreManagerApp(Application):
             family_id=event.family_id
         )
 
-        self.write_model.save_store_aggregate(aggregate=store_aggregate)
         self.save(store_aggregate)
+        self.write_model.save_store_aggregate(aggregate=store_aggregate)
+
         logger.info(f"Created Store: {store_aggregate.id}")
         return store_aggregate.id
 
