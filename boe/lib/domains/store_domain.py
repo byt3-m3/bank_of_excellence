@@ -51,6 +51,7 @@ class StoreAggregate(Aggregate):
     def _update_store_item_map(self, item: StoreItemEntity):
         if item.id not in self.store_item_map.keys():
             self.store_item_map[item.id] = asdict(item)
+
         else:
             self.store_item_map.update({item.id: asdict(item)})
 
@@ -63,12 +64,7 @@ class StoreAggregate(Aggregate):
         return [item for item in self.store_item_map.values()]
 
     @event
-    def new_store_item(self, name: str, value: float, description: str):
-        store_item = StoreDomainFactory.build_store_item_entity(
-            name=name,
-            value=value,
-            description=description
-        )
+    def new_store_item(self, store_item: StoreItemEntity):
         self._update_store_item_map(item=store_item)
 
     @event
