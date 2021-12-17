@@ -15,7 +15,8 @@ AMQP_PORT = os.getenv("AMQP_PORT")
 
 AMPQ_URL = os.getenv("AMPQ_URL", f"amqp://{AMQP_USER}:{AMQP_PW}@{AMQP_HOST}:{AMQP_PORT}")
 
-BANK_MANAGER_APP_QUEUE = os.getenv("BANK_MANAGER_APP_QUEUE", f"{STAGE}_bank_manager_app_queue".upper())
+_BANK_MANAGER_APP_QUEUE = os.getenv("BANK_MANAGER_APP_QUEUE", "bank_manager_app_queue")
+_STORE_MANAGER_APP_QUEUE = os.getenv("STORE_MANAGER_APP_QUEUE", "store_manager_app_queue")
 
 MONGO_HOST = os.getenv("MONGO_HOST", "192.168.1.5")
 MONGO_PORT = os.getenv("MONGO_PORT", 27017)
@@ -29,3 +30,8 @@ CHILD_ACCOUNT_TABLE = f'{STAGE}_{_CHILD_ACCOUNT_TABLE_ID}'.upper()
 ADULT_ACCOUNT_TABLE = f'{STAGE}_{_ADULT_ACCOUNT_TABLE_ID}'.upper()
 FAMILY_TABLE = f'{STAGE}_{_FAMILY_TABLE_ID}'.upper()
 STORE_TABLE = f'{STAGE}_{_STORE_TABLE_ID}'.upper()
+
+BANK_MANAGER_APP_QUEUE = f'{STAGE}_{_BANK_MANAGER_APP_QUEUE}'.upper()
+STORE_MANAGER_APP_QUEUE = f'{STAGE}_{_STORE_MANAGER_APP_QUEUE}'.upper()
+
+SQLLITE_WORKER_EVENT_STORE = os.getenv("SQLLITE_WORKER_EVENT_STORE", "_db/workers_event_store")

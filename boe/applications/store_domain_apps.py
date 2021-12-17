@@ -8,11 +8,11 @@ from boe.lib.domains.store_domain import (
     StoreAggregate,
     StoreDomainFactory
 )
-from cbaxter1988_utils.log_utils import get_logger
 from eventsourcing.application import Application
 from eventsourcing.persistence import Transcoder
+from logging import getLogger
 
-logger = get_logger("StoreManagerApp")
+logger = getLogger("StoreManagerApp")
 
 
 @dataclass(frozen=True)
@@ -87,8 +87,9 @@ class StoreManagerApp(Application):
             family_id=event.family_id
         )
 
-        self.write_model.save_store_aggregate(aggregate=store_aggregate)
         self.save(store_aggregate)
+        self.write_model.save_store_aggregate(aggregate=store_aggregate)
+
         logger.info(f"Created Store: {store_aggregate.id}")
         return store_aggregate.id
 
