@@ -1,6 +1,6 @@
 from uuid import uuid4, UUID
 
-from boe.env import AMPQ_URL, BANK_MANAGER_APP_QUEUE
+from boe.env import AMPQ_URL, BANK_MANAGER_APP_QUEUE, STORE_MANAGER_APP_QUEUE
 from cbaxter1988_utils.pika_utils import make_basic_pika_publisher
 
 publisher = make_basic_pika_publisher(
@@ -37,5 +37,23 @@ def publish_new_transaction_event():
     )
 
 
+def publish_new_store_event():
+    publisher = make_basic_pika_publisher(
+        amqp_url=AMPQ_URL,
+        queue=STORE_MANAGER_APP_QUEUE,
+        exchange="STORE_MANAGER_EXCHANGE",
+        routing_key="STORE_MANAGER__KEY"
+    )
+
+    publisher.publish_message(
+        body={
+            "NewStoreEvent": {
+                "family_id": str(uuid4())
+            }
+        }
+    )
+
+
 if __name__ == "__main__":
-    publish_new_transaction_event()
+    publish_establish_new_account_event()
+    publish_new_store_event()
