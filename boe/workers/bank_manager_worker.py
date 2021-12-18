@@ -1,12 +1,12 @@
 import json
 import os
 
-from boe.applications import (
+from boe.applications.bank_domain_apps import BankDomainAppEventFactory
+from boe.applications.bank_domain_apps import (
     BankManagerApp
 
 )
-from boe.applications.bank_domain_apps import BankDomainAppEventFactory
-from boe.env import AMPQ_URL, BANK_MANAGER_APP_QUEUE, SQLLITE_WORKER_EVENT_STORE
+from boe.env import AMPQ_URL, BANK_MANAGER_APP_QUEUE, BANK_MANAGER_WORKER_SQLITE_EVENT_STORE
 from cbaxter1988_utils.log_utils import get_logger
 from cbaxter1988_utils.pika_utils import make_basic_pika_consumer
 from pika.adapters.blocking_connection import BlockingChannel
@@ -15,7 +15,7 @@ from pika.spec import Basic, BasicProperties
 logger = get_logger("bank_manager_worker")
 
 INFRASTRUCTURE_FACTORY = "eventsourcing.sqlite:Factory"
-SQLITE_DBNAME = SQLLITE_WORKER_EVENT_STORE
+SQLITE_DBNAME = BANK_MANAGER_WORKER_SQLITE_EVENT_STORE
 
 os.environ['INFRASTRUCTURE_FACTORY'] = INFRASTRUCTURE_FACTORY
 os.environ['SQLITE_DBNAME'] = SQLITE_DBNAME
@@ -45,8 +45,10 @@ def on_message_callback(ch: BlockingChannel, method: Basic.Deliver, properties: 
             result = handler(event=_event)
 
             logger.info(f'Processed ApplicationEvent={_event} - Handler={handler}')
-        except Exception:
+        except Exception as error:
+
             ch.basic_nack(delivery_tag=method.delivery_tag)
+            raise
 
     ch.basic_ack(delivery_tag=method.delivery_tag)
 

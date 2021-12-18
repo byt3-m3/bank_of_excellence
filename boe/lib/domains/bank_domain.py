@@ -37,6 +37,7 @@ class BankAccountTableModel:
     state: BankAccountStateEnum
     transactions: List['BankTransactionEntity']
     balance: float
+    version: int
 
 
 @dataclass
@@ -158,10 +159,10 @@ class BankDomainFactory:
     @staticmethod
     def rebuild_bank_account_entity(
             is_overdraft_protected: bool,
-            owner_id: UUID,
+            owner_id: str,
             state: BankAccountStateEnum,
             balance: float,
-            _id: UUID,
+            _id: str,
             **kwargs
     ) -> BankAccountEntity:
         """
@@ -177,10 +178,10 @@ class BankDomainFactory:
         """
         return BankAccountEntity(
             is_overdraft_protected=is_overdraft_protected,
-            owner_id=owner_id,
+            owner_id=UUID(owner_id),
             state=BankAccountStateEnum(state),
             balance=balance,
-            id=_id
+            id=UUID(owner_id)
         )
 
     @staticmethod
@@ -230,6 +231,26 @@ class BankDomainFactory:
             is_overdraft_protected=is_overdraft_protected,
         )
 
+    @staticmethod
+    def rebuild_bank_domain_aggregate(
+            bank_account: dict,
+            bank_transactions: list,
+            version: str
+    ):
+        bank_account_entity = BankDomainFactory.rebuild_bank_account_entity(
+            **bank_account,
+            _id=bank_account['owner_id']
+        )
+
+        agg = BankDomainAggregate(
+            bank_account=bank_account_entity,
+            bank_transactions=bank_transactions,
+
+        )
+        agg._id = bank_account_entity.id
+        agg.version = int(version)
+        return agg
+
 
 class BankDomainWriteModel:
     def __init__(self):
@@ -248,7 +269,8 @@ class BankDomainWriteModel:
             owner_id=aggregate.bank_account.owner_id,
             state=aggregate.bank_account.state,
             transactions=aggregate.bank_transactions,
-            balance=aggregate.bank_account.balance
+            balance=aggregate.bank_account.balance,
+            version=aggregate.version
 
         )
         item_data = serialize_aggregate(model)
