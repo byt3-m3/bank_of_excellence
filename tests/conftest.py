@@ -14,6 +14,15 @@ def set_env():
 
 
 @fixture
+def set_persistence_test_env():
+    INFRASTRUCTURE_FACTORY = "eventsourcing.sqlite:Factory"
+    SQLITE_DBNAME = "_db/persistence_events.sqllite"
+
+    os.environ['INFRASTRUCTURE_FACTORY'] = INFRASTRUCTURE_FACTORY
+    os.environ['SQLITE_DBNAME'] = SQLITE_DBNAME
+
+
+@fixture
 def bank_account_uuid():
     return UUID("00000000-0000-0000-0000-000000000010")
 

@@ -19,7 +19,21 @@ from boe.lib.domains.user_domain import (
     UserAccountDetail,
     UserAccountTypeEnum
 )
+
+from boe.lib.domains.persistence_domain import PersistenceRequest
+
 from eventsourcing.persistence import Transcoding
+
+class PersistenceRequestTranscoding(Transcoding):
+    type = PersistenceRequest
+    name = "PersistenceRequest"
+
+    def encode(self, o: PersistenceRequest) -> str:
+        return asdict(o)
+
+    def decode(self, d: dict):
+        return PersistenceRequest(**d)
+
 
 
 class StoreItemEntityTranscoding(Transcoding):

@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from uuid import uuid4, UUID
+from uuid import UUID
 
 from boe.applications.transcodings import (
     BankAccountStateEnumTranscoding,
@@ -7,6 +7,7 @@ from boe.applications.transcodings import (
     BankTransactionEntityTranscoding,
     BankAccountEntityTranscoding
 )
+from boe.clients.persistence_worker_client import PersistenceWorkerClient
 from boe.lib.common_models import AppEvent
 from boe.lib.domains.bank_domain import (
     BankDomainFactory,
@@ -14,7 +15,6 @@ from boe.lib.domains.bank_domain import (
     BankDomainWriteModel,
     BankDomainAggregate
 )
-from boe.utils.eventsourcing_utils import make_snapshot
 from eventsourcing.application import Application
 from eventsourcing.persistence import Transcoder
 
@@ -61,6 +61,7 @@ class BankManagerApp(Application):
         super().__init__()
         self.factory = BankDomainFactory()
         self.write_model = BankDomainWriteModel()
+        self.persistence_worker_client = PersistenceWorkerClient()
 
     def register_transcodings(self, transcoder: Transcoder):
         super().register_transcodings(transcoder)
@@ -69,33 +70,16 @@ class BankManagerApp(Application):
         transcoder.register(BankTransactionEntityTranscoding())
         transcoder.register(BankTransactionMethodEnumTranscoding())
 
-    def test_event(self):
-        aggregate = self.factory.build_bank_domain_aggregate(
-            owner_id=uuid4(),
-            is_overdraft_protected=True
-        )
-        transaction = self.factory.build_bank_transaction_entity(
-            item_id=uuid4(),
-            method=BankTransactionMethodEnum.add,
-            value=5,
-            account_id=aggregate.id
-        )
-
-        aggregate.apply_transaction_to_account(transaction=transaction)
-        snap_shot = make_snapshot(aggregate)
-
-        print(snap_shot)
-        self.save(aggregate)
-
     def handle_establish_new_account_event(self, event: EstablishNewAccountEvent) -> UUID:
         aggregate = self.factory.build_bank_domain_aggregate(
             owner_id=event.owner_id,
             is_overdraft_protected=event.is_overdraft_protected
         )
 
-        self.write_model.save_bank_aggregate(aggregate=aggregate)
-
         self.save(aggregate)
+        self.persistence_worker_client.publish_persist_bank_domain_aggregate_event(
+            aggregate=aggregate
+        )
         return aggregate.id
 
     def handle_new_transaction_event(self, event: NewTransactionEvent) -> UUID:
@@ -109,7 +93,8 @@ class BankManagerApp(Application):
         aggregate: BankDomainAggregate = self.repository.get(aggregate_id=event.account_id)
         aggregate.apply_transaction_to_account(transaction=transaction)
 
-        snapshot = make_snapshot(aggregate)
-        self.write_model.save_bank_aggregate(aggregate=snapshot)
         self.save(aggregate)
+        self.persistence_worker_client.publish_persist_bank_domain_aggregate_event(
+            aggregate=aggregate
+        )
         return aggregate.id

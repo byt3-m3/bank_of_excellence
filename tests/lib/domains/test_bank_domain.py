@@ -28,8 +28,8 @@ def bank_domain_repository():
 @fixture
 def bank_account_entity_testable(bank_account_uuid) -> BankAccountEntity:
     return BankDomainFactory.rebuild_bank_account_entity(
-        _id=bank_account_uuid,
-        owner_id=bank_account_uuid,
+        _id=str(bank_account_uuid),
+        owner_id=str(bank_account_uuid),
         is_overdraft_protected=False,
         balance=0,
         state=BankAccountStateEnum.enabled,
