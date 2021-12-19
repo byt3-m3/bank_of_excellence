@@ -12,6 +12,8 @@ boe/applications/store_domain_apps.py
 boe/applications/transcodings.py
 boe/applications/user_manager_app.py
 boe/clients/__init__.py
+boe/clients/bank_manager_worker_client.py
+boe/clients/client.py
 boe/clients/persistence_worker_client.py
 boe/lib/__init__.py
 boe/lib/common_models.py
