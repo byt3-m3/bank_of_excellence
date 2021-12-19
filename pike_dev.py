@@ -1,42 +1,31 @@
 from uuid import uuid4
 
 from boe.clients.persistence_worker_client import PersistenceWorkerClient
-from boe.env import AMPQ_URL, BANK_MANAGER_APP_QUEUE, STORE_MANAGER_APP_QUEUE, PERSISTENCE_WORKER_QUEUE
-from boe.lib.domains.bank_domain import BankDomainFactory
+from boe.clients.bank_manager_worker_client import BankManagerWorkerClient
+from boe.env import AMPQ_URL, BANK_MANAGER_WORKER_QUEUE, STORE_MANAGER_APP_QUEUE, PERSISTENCE_WORKER_QUEUE
+from boe.lib.domains.bank_domain import BankDomainFactory, BankTransactionMethodEnum
 from boe.utils.serialization_utils import serialize_aggregate
 from cbaxter1988_utils.pika_utils import make_basic_pika_publisher
 
-publisher = make_basic_pika_publisher(
-    amqp_url=AMPQ_URL,
-    queue=BANK_MANAGER_APP_QUEUE,
-    exchange="BANK_MANAGER_EXCHANGE",
-    routing_key="BANK_MANAGER_KEY"
-)
+bank_manager_worker_client = BankManagerWorkerClient()
 
 
 def publish_establish_new_account_event():
     account_id = str(uuid4())
-    publisher.publish_message(
-        body={
-            "EstablishNewAccountEvent": {
-                "owner_id": account_id,
-                "is_overdraft_protected": True
-            }
-        }
+
+    bank_manager_worker_client.publish_new_bank_account_event(
+        owner_id=account_id
     )
+
     return account_id
 
 
 def publish_new_transaction_event(account_id):
-    publisher.publish_message(
-        body={
-            "NewTransactionEvent": {
-                "item_id": "00000000-0000-0000-0000-000000000010",
-                "account_id": account_id,
-                "transaction_method": 0,
-                "value": 5
-            }
-        }
+    bank_manager_worker_client.publish_new_transaction_event(
+        item_id="00000000-0000-0000-0000-000000000010",
+        account_id=account_id,
+        transaction_method=BankTransactionMethodEnum.add,
+        value=5
     )
 
 
