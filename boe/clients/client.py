@@ -5,12 +5,12 @@ from boe.utils.serialization_utils import serialize_aggregate
 
 
 class PikaWorkerClient:
-    def __init__(self):
+    def __init__(self, worker_que, worker_exchange, worker_routing_key):
         self.rabbit_client = make_basic_pika_publisher(
             amqp_url=AMPQ_URL,
-            queue=BANK_MANAGER_WORKER_QUEUE,
-            exchange="P_WORKER_EXCHANGE",
-            routing_key="P_WORKER_KEY"
+            queue=worker_que,
+            exchange=worker_exchange,
+            routing_key=worker_routing_key
 
         )
 
