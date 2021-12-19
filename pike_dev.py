@@ -69,5 +69,7 @@ def publish_save_aggregate_event():
 
 
 if __name__ == "__main__":
-    account_id = publish_establish_new_account_event()
-    publish_new_transaction_event(account_id=account_id)
+    # account_id = publish_establish_new_account_event()
+    # publish_new_transaction_event(account_id=account_id)
+
+    publish_save_aggregate_event()
