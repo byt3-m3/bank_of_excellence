@@ -11,7 +11,6 @@ from eventsourcing.domain import Aggregate, event
 @dataclass
 class PersistenceRequest(Entity):
     payload: dict
-    payload_type: str
     created: datetime.datetime
 
     @property
@@ -20,37 +19,39 @@ class PersistenceRequest(Entity):
 
 
 @dataclass
+class PersistenceRecord(Entity):
+    aggregate_id: UUID
+    aggregate_type: str
+
+
+@dataclass
 class PersistenceAggregate(Aggregate):
+    record: PersistenceRecord
     requests: List[PersistenceRequest]
 
-    def __init__(self, requests):
+    def __init__(self, requests: List[PersistenceRequest], record: PersistenceRecord):
         self.bank_domain_write_model = BankDomainWriteModel()
         self.bank_domain_factory = BankDomainFactory()
         self.requests = requests
+        self.record = record
 
     @classmethod
-    def create(cls, aggregate_id: UUID):
+    def create(cls, aggregate_id: UUID, aggregate_type: str):
         return cls._create(
             cls.Created,
             id=aggregate_id,
+            record=PersistenceRecord(
+                aggregate_id=aggregate_id,
+                aggregate_type=aggregate_type,
+                id=aggregate_id
+            ),
             requests=[]
         )
-
-    @event
-    def new_persistence_request(self, payload: dict, payload_type: str, _id=None):
-        request = PersistenceDomainFactory.build_persistence_request(
-            payload=payload,
-            payload_type=payload_type,
-            _id=_id
-        )
-
-        self.requests.append(request)
 
     @event
     def persist_bank_aggregate(self, payload: dict):
         request = PersistenceDomainFactory.build_persistence_request(
             payload=payload,
-            payload_type="BankAggregate",
             _id=payload.get("id")
         )
 
@@ -65,16 +66,16 @@ class PersistenceAggregate(Aggregate):
 
 class PersistenceDomainFactory:
     @staticmethod
-    def build_persistence_request(payload: dict, payload_type: str, _id=None):
+    def build_persistence_request(payload: dict, _id=None):
         return PersistenceRequest(
             id=uuid4() if _id is None else _id,
             payload=payload,
-            payload_type=payload_type,
             created=datetime.datetime.now()
         )
 
     @staticmethod
-    def build_persistence_aggregate(aggregate_id: UUID):
+    def build_persistence_aggregate(aggregate_id: UUID, aggregate_type: str):
         return PersistenceAggregate.create(
             aggregate_id=aggregate_id,
+            aggregate_type=aggregate_type
         )

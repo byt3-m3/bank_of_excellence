@@ -51,7 +51,8 @@ class PersistenceServiceApp(Application):
             logger.error(f'Encountered Error {AggregateNotFound}: "{str(err)}"')
             logger.warn(f"Aggregate: '{event.aggregate_id}' Not Found, Creating..")
             aggregate = self.persistence_domain_factory.build_persistence_aggregate(
-                aggregate_id=event.aggregate_id
+                aggregate_id=event.aggregate_id,
+                aggregate_type=event.payload_type
             )
 
         aggregate.persist_bank_aggregate(
