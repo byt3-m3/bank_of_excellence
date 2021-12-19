@@ -1,7 +1,14 @@
+from unittest.mock import patch
 from uuid import uuid4
 
 from boe.applications.store_domain_apps import StoreManagerApp, StoreManagerAppEventFactory
 from pytest import fixture
+
+
+@fixture
+def store_domain_write_model_mock():
+    with patch("boe.applications.store_domain_apps.StoreDomainWriteModel") as write_model_mock:
+        yield write_model_mock
 
 
 @fixture
@@ -16,14 +23,23 @@ def new_store_event():
     )
 
 
-def test_store_manager_app_when_handling_new_store_event(store_manager_app_testable, new_store_event):
+def test_store_manager_app_when_handling_new_store_event(
+        store_domain_write_model_mock,
+        store_manager_app_testable,
+        new_store_event
+):
     app = store_manager_app_testable
     event = new_store_event
 
     app.handle_new_store_event(event=event)
+    store_domain_write_model_mock.assert_called()
 
 
-def test_store_manager_app_when_handling_new_store_item_event(store_manager_app_testable, new_store_event):
+def test_store_manager_app_when_handling_new_store_item_event(
+        store_domain_write_model_mock,
+        store_manager_app_testable,
+        new_store_event
+):
     app = store_manager_app_testable
     store_id = app.handle_new_store_event(event=new_store_event)
 
@@ -35,9 +51,14 @@ def test_store_manager_app_when_handling_new_store_item_event(store_manager_app_
     )
 
     app.handle_new_store_item_event(event=new_store_item_event)
+    store_domain_write_model_mock.assert_called()
 
 
-def test_store_manager_app_when_handling_remove_store_item_event(store_manager_app_testable, new_store_event):
+def test_store_manager_app_when_handling_remove_store_item_event(
+        store_domain_write_model_mock,
+        store_manager_app_testable,
+        new_store_event
+):
     app = store_manager_app_testable
     store_id = app.handle_new_store_event(event=new_store_event)
 
@@ -62,3 +83,5 @@ def test_store_manager_app_when_handling_remove_store_item_event(store_manager_a
 
     store = app.get_store(aggregate_id=store_id)
     assert len(store.store_item_ids) == 0
+
+    store_domain_write_model_mock.assert_called()

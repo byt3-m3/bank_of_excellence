@@ -1,4 +1,5 @@
 import datetime
+from unittest.mock import patch
 from uuid import UUID
 
 from boe.applications.user_manager_app import (
@@ -7,10 +8,13 @@ from boe.applications.user_manager_app import (
     SubscriptionTypeEnum,
     UserManagerAppEventFactory
 )
-from boe.lib.domains.user_domain import (
-    UserAccountEntity
-)
 from pytest import fixture
+
+
+@fixture
+def user_domain_write_model_mock():
+    with patch("boe.applications.user_manager_app.UserDomainWriteModel", autospec=True) as write_model_mock:
+        yield write_model_mock
 
 
 @fixture
@@ -62,7 +66,8 @@ def new_family_app_event_premium():
     )
 
 
-def _test_user_manager_app_when_handling_new_family_app_event(
+def test_user_manager_app_when_handling_new_family_app_event(
+        user_domain_write_model_mock,
         user_manager_app_testable,
         new_family_app_event_basic
 ):
@@ -71,9 +76,11 @@ def _test_user_manager_app_when_handling_new_family_app_event(
 
     result = app.handle_new_family_event(event=event)
     assert isinstance(result, UUID)
+    user_domain_write_model_mock.assert_called()
 
 
 def test_user_manager_app_when_handling_new_child_account_event(
+        user_domain_write_model_mock,
         user_manager_app_testable,
         new_family_app_event_basic
 ):
@@ -93,9 +100,11 @@ def test_user_manager_app_when_handling_new_child_account_event(
     )
 
     app.handle_new_child_account_event(event=new_child_account_event)
+    user_domain_write_model_mock.assert_called()
 
 
 def test_user_manager_app_when_handling_family_subscription_change_event(
+        user_domain_write_model_mock,
         user_manager_app_testable,
         new_family_app_event_basic
 ):
@@ -110,3 +119,4 @@ def test_user_manager_app_when_handling_family_subscription_change_event(
     )
 
     app.handle_family_subscription_type_change_event(event=sub_change_event)
+    user_domain_write_model_mock.assert_called()

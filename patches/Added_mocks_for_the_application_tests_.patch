@@ -1,0 +1,232 @@
+Index: tests/applications/test_bank_manager_app.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/tests/applications/test_bank_manager_app.py b/tests/applications/test_bank_manager_app.py
+--- a/tests/applications/test_bank_manager_app.py	(revision b5500f5e0fb6fb4b41c42eca4ca81564357b4c3b)
++++ b/tests/applications/test_bank_manager_app.py	(revision 613a442f11e6f16f8e5d49c5de7cefca87d2ae43)
+@@ -1,9 +1,9 @@
+-from uuid import uuid4
+ from unittest.mock import patch
++from uuid import uuid4
++
+ from boe.applications.bank_domain_apps import (
+     BankManagerApp,
+-    BankDomainAppEventFactory,
+-    EstablishNewAccountEvent
++    BankDomainAppEventFactory
+ )
+ from boe.lib.domains.bank_domain import (
+ 
+@@ -13,6 +13,12 @@
+ from pytest import fixture
+ 
+ 
++@fixture
++def persistence_worker_client_mock():
++    with patch("boe.applications.bank_domain_apps.PersistenceWorkerClient") as client_mock:
++        yield client_mock
++
++
+ @fixture
+ def establish_new_account_event(user_account_uuid):
+     return BankDomainAppEventFactory.build_establish_new_account_event(
+@@ -33,6 +39,7 @@
+ 
+ 
+ def test_bank_manager_app_when_handle_establish_new_account_event(
++        persistence_worker_client_mock,
+         bank_manager_app_testable,
+         establish_new_account_event
+ ):
+@@ -42,9 +49,11 @@
+ 
+     aggregate = app.repository.get(_id)
+     assert isinstance(aggregate, BankDomainAggregate)
++    persistence_worker_client_mock.assert_called()
+ 
+ 
+ def test_bank_manager_app_when_handling_new_transaction_event(
++        persistence_worker_client_mock,
+         bank_manager_app_testable,
+         establish_new_account_event,
+ ):
+@@ -64,3 +73,4 @@
+ 
+     assert isinstance(aggregate, BankDomainAggregate)
+     assert aggregate.bank_account.balance == 6
++    persistence_worker_client_mock.assert_called()
+Index: tests/applications/test_store_manager_app.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/tests/applications/test_store_manager_app.py b/tests/applications/test_store_manager_app.py
+--- a/tests/applications/test_store_manager_app.py	(revision b5500f5e0fb6fb4b41c42eca4ca81564357b4c3b)
++++ b/tests/applications/test_store_manager_app.py	(revision 613a442f11e6f16f8e5d49c5de7cefca87d2ae43)
+@@ -1,9 +1,16 @@
++from unittest.mock import patch
+ from uuid import uuid4
+ 
+ from boe.applications.store_domain_apps import StoreManagerApp, StoreManagerAppEventFactory
+ from pytest import fixture
+ 
+ 
++@fixture
++def store_domain_write_model_mock():
++    with patch("boe.applications.store_domain_apps.StoreDomainWriteModel") as write_model_mock:
++        yield write_model_mock
++
++
+ @fixture
+ def store_manager_app_testable():
+     return StoreManagerApp()
+@@ -16,14 +23,23 @@
+     )
+ 
+ 
+-def test_store_manager_app_when_handling_new_store_event(store_manager_app_testable, new_store_event):
++def test_store_manager_app_when_handling_new_store_event(
++        store_domain_write_model_mock,
++        store_manager_app_testable,
++        new_store_event
++):
+     app = store_manager_app_testable
+     event = new_store_event
+ 
+     app.handle_new_store_event(event=event)
++    store_domain_write_model_mock.assert_called()
+ 
+ 
+-def test_store_manager_app_when_handling_new_store_item_event(store_manager_app_testable, new_store_event):
++def test_store_manager_app_when_handling_new_store_item_event(
++        store_domain_write_model_mock,
++        store_manager_app_testable,
++        new_store_event
++):
+     app = store_manager_app_testable
+     store_id = app.handle_new_store_event(event=new_store_event)
+ 
+@@ -35,9 +51,14 @@
+     )
+ 
+     app.handle_new_store_item_event(event=new_store_item_event)
++    store_domain_write_model_mock.assert_called()
+ 
+ 
+-def test_store_manager_app_when_handling_remove_store_item_event(store_manager_app_testable, new_store_event):
++def test_store_manager_app_when_handling_remove_store_item_event(
++        store_domain_write_model_mock,
++        store_manager_app_testable,
++        new_store_event
++):
+     app = store_manager_app_testable
+     store_id = app.handle_new_store_event(event=new_store_event)
+ 
+@@ -62,3 +83,5 @@
+ 
+     store = app.get_store(aggregate_id=store_id)
+     assert len(store.store_item_ids) == 0
++
++    store_domain_write_model_mock.assert_called()
+Index: tests/applications/test_user_manager_app.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/tests/applications/test_user_manager_app.py b/tests/applications/test_user_manager_app.py
+--- a/tests/applications/test_user_manager_app.py	(revision b5500f5e0fb6fb4b41c42eca4ca81564357b4c3b)
++++ b/tests/applications/test_user_manager_app.py	(revision 613a442f11e6f16f8e5d49c5de7cefca87d2ae43)
+@@ -1,4 +1,5 @@
+ import datetime
++from unittest.mock import patch
+ from uuid import UUID
+ 
+ from boe.applications.user_manager_app import (
+@@ -7,12 +8,15 @@
+     SubscriptionTypeEnum,
+     UserManagerAppEventFactory
+ )
+-from boe.lib.domains.user_domain import (
+-    UserAccountEntity
+-)
+ from pytest import fixture
+ 
+ 
++@fixture
++def user_domain_write_model_mock():
++    with patch("boe.applications.user_manager_app.UserDomainWriteModel", autospec=True) as write_model_mock:
++        yield write_model_mock
++
++
+ @fixture
+ def family_uuid():
+     return UUID("43f7858bbf9240258c8428e422bd3a28")
+@@ -62,7 +66,8 @@
+     )
+ 
+ 
+-def _test_user_manager_app_when_handling_new_family_app_event(
++def test_user_manager_app_when_handling_new_family_app_event(
++        user_domain_write_model_mock,
+         user_manager_app_testable,
+         new_family_app_event_basic
+ ):
+@@ -71,9 +76,11 @@
+ 
+     result = app.handle_new_family_event(event=event)
+     assert isinstance(result, UUID)
++    user_domain_write_model_mock.assert_called()
+ 
+ 
+ def test_user_manager_app_when_handling_new_child_account_event(
++        user_domain_write_model_mock,
+         user_manager_app_testable,
+         new_family_app_event_basic
+ ):
+@@ -93,9 +100,11 @@
+     )
+ 
+     app.handle_new_child_account_event(event=new_child_account_event)
++    user_domain_write_model_mock.assert_called()
+ 
+ 
+ def test_user_manager_app_when_handling_family_subscription_change_event(
++        user_domain_write_model_mock,
+         user_manager_app_testable,
+         new_family_app_event_basic
+ ):
+@@ -110,3 +119,4 @@
+     )
+ 
+     app.handle_family_subscription_type_change_event(event=sub_change_event)
++    user_domain_write_model_mock.assert_called()
+Index: tests/lib/domains/test_store_domain.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/tests/lib/domains/test_store_domain.py b/tests/lib/domains/test_store_domain.py
+--- a/tests/lib/domains/test_store_domain.py	(revision b5500f5e0fb6fb4b41c42eca4ca81564357b4c3b)
++++ b/tests/lib/domains/test_store_domain.py	(revision 613a442f11e6f16f8e5d49c5de7cefca87d2ae43)
+@@ -1,6 +1,7 @@
++from unittest.mock import patch
++
+ from boe.lib.domains.store_domain import (
+-    StoreDomainFactory,
+-    StoreDomainWriteModel
++    StoreDomainFactory
+ )
+ from pytest import fixture
+ 
+@@ -80,5 +81,7 @@
+         store_item=store_item_2
+     )
+ 
+-    write_model = StoreDomainWriteModel()
+-    write_model.save_store_aggregate(aggregate=store_aggregate)
++    with patch("boe.lib.domains.store_domain.StoreDomainWriteModel") as model_mock:
++        write_model = model_mock()
++        write_model.save_store_aggregate(aggregate=store_aggregate)
++        model_mock.assert_called()

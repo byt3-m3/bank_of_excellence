@@ -1,6 +1,7 @@
+from unittest.mock import patch
+
 from boe.lib.domains.store_domain import (
-    StoreDomainFactory,
-    StoreDomainWriteModel
+    StoreDomainFactory
 )
 from pytest import fixture
 
@@ -80,5 +81,7 @@ def test_store_domain_write_model_when_saving_aggregate(store_aggregate_testable
         store_item=store_item_2
     )
 
-    write_model = StoreDomainWriteModel()
-    write_model.save_store_aggregate(aggregate=store_aggregate)
+    with patch("boe.lib.domains.store_domain.StoreDomainWriteModel") as model_mock:
+        write_model = model_mock()
+        write_model.save_store_aggregate(aggregate=store_aggregate)
+        model_mock.assert_called()
