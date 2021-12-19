@@ -6,7 +6,7 @@ from boe.applications.bank_domain_apps import (
     BankManagerApp
 
 )
-from boe.env import AMPQ_URL, BANK_MANAGER_APP_QUEUE, BANK_MANAGER_WORKER_SQLITE_EVENT_STORE
+from boe.env import AMPQ_URL, BANK_MANAGER_WORKER_QUEUE, BANK_MANAGER_WORKER_SQLITE_EVENT_STORE
 from cbaxter1988_utils.log_utils import get_logger
 from cbaxter1988_utils.pika_utils import make_basic_pika_consumer
 from pika.adapters.blocking_connection import BlockingChannel
@@ -56,7 +56,7 @@ def on_message_callback(ch: BlockingChannel, method: Basic.Deliver, properties: 
 def main():
     consumer = make_basic_pika_consumer(
         amqp_url=AMPQ_URL,
-        queue=BANK_MANAGER_APP_QUEUE,
+        queue=BANK_MANAGER_WORKER_QUEUE,
         on_message_callback=on_message_callback,
     )
     consumer.run()
