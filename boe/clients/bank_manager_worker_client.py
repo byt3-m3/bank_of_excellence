@@ -1,12 +1,18 @@
 from boe.applications.bank_domain_apps import BankDomainAppEventFactory
-from boe.lib.domains.bank_domain import BankTransactionMethodEnum
 from boe.clients.client import PikaWorkerClient
+from boe.env import BANK_MANAGER_WORKER_QUEUE
+from boe.lib.domains.bank_domain import BankTransactionMethodEnum
 
 
 class BankManagerWorkerClient(PikaWorkerClient):
 
     def __init__(self):
-        super().__init__()
+        super().__init__(
+            worker_que=BANK_MANAGER_WORKER_QUEUE,
+            worker_exchange="BANK_MANAGER_EXCHANGE",
+            worker_routing_key='BANK_MANAGER_KEY'
+
+        )
         self.app_event_factory = BankDomainAppEventFactory()
 
     def publish_new_bank_account_event(self, owner_id: str):
