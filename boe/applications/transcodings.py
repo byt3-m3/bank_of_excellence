@@ -6,6 +6,7 @@ from boe.lib.domains.bank_domain import (
     BankTransactionMethodEnum,
     BankAccountStateEnum
 )
+from boe.lib.domains.persistence_domain import PersistenceRequest, PersistenceRecord
 from boe.lib.domains.store_domain import (
     StoreEntity,
     StoreItemEntity
@@ -19,10 +20,19 @@ from boe.lib.domains.user_domain import (
     UserAccountDetail,
     UserAccountTypeEnum
 )
-
-from boe.lib.domains.persistence_domain import PersistenceRequest
-
 from eventsourcing.persistence import Transcoding
+
+
+class PersistenceRecordTranscoding(Transcoding):
+    type = PersistenceRecord
+    name = "PersistenceRecord"
+
+    def encode(self, o: PersistenceRecord) -> str:
+        return asdict(o)
+
+    def decode(self, d: dict):
+        return PersistenceRecord(**d)
+
 
 class PersistenceRequestTranscoding(Transcoding):
     type = PersistenceRequest
@@ -33,7 +43,6 @@ class PersistenceRequestTranscoding(Transcoding):
 
     def decode(self, d: dict):
         return PersistenceRequest(**d)
-
 
 
 class StoreItemEntityTranscoding(Transcoding):

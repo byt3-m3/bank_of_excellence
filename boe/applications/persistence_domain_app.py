@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from uuid import UUID
 
-from boe.applications.transcodings import PersistenceRequestTranscoding
+from boe.applications.transcodings import PersistenceRequestTranscoding, PersistenceRecordTranscoding
 from boe.lib.common_models import AppEvent
 from boe.lib.domains.bank_domain import BankDomainWriteModel
 from boe.lib.domains.persistence_domain import PersistenceDomainFactory, PersistenceAggregate
@@ -39,6 +39,7 @@ class PersistenceServiceApp(Application):
     def register_transcodings(self, transcoder: Transcoder):
         super().register_transcodings(transcoder)
         transcoder.register(PersistenceRequestTranscoding())
+        transcoder.register(PersistenceRecordTranscoding())
 
     def get_persistence_aggregate(self, _id: UUID) -> PersistenceAggregate:
         return self.repository.get(aggregate_id=_id)
