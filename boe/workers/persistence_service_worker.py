@@ -12,7 +12,7 @@ from pika.adapters.blocking_connection import BlockingChannel
 from pika.spec import Basic, BasicProperties
 
 logger = get_logger("PersistenceServiceWorker")
-print(PERSISTENCE_WORKER_SQLITE_EVENT_STORE)
+
 INFRASTRUCTURE_FACTORY = "eventsourcing.sqlite:Factory"
 SQLITE_DBNAME = PERSISTENCE_WORKER_SQLITE_EVENT_STORE
 

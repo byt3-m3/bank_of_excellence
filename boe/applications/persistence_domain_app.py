@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from uuid import UUID
 
-from boe.applications.transcodings import PersistenceRequestTranscoding
+from boe.applications.transcodings import PersistenceRequestTranscoding, PersistenceRecordTranscoding
 from boe.lib.common_models import AppEvent
 from boe.lib.domains.bank_domain import BankDomainWriteModel
 from boe.lib.domains.persistence_domain import PersistenceDomainFactory, PersistenceAggregate
@@ -39,6 +39,7 @@ class PersistenceServiceApp(Application):
     def register_transcodings(self, transcoder: Transcoder):
         super().register_transcodings(transcoder)
         transcoder.register(PersistenceRequestTranscoding())
+        transcoder.register(PersistenceRecordTranscoding())
 
     def get_persistence_aggregate(self, _id: UUID) -> PersistenceAggregate:
         return self.repository.get(aggregate_id=_id)
@@ -51,7 +52,8 @@ class PersistenceServiceApp(Application):
             logger.error(f'Encountered Error {AggregateNotFound}: "{str(err)}"')
             logger.warn(f"Aggregate: '{event.aggregate_id}' Not Found, Creating..")
             aggregate = self.persistence_domain_factory.build_persistence_aggregate(
-                aggregate_id=event.aggregate_id
+                aggregate_id=event.aggregate_id,
+                aggregate_type=event.payload_type
             )
 
         aggregate.persist_bank_aggregate(
