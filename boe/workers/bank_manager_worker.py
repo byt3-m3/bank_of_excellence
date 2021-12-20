@@ -7,7 +7,14 @@ from boe.applications.bank_domain_apps import (
     BankManagerApp
 
 )
-from boe.env import AMQP_URL, BANK_MANAGER_WORKER_QUEUE, BANK_MANAGER_WORKER_EVENT_STORE
+from boe.env import (
+    AMQP_URL,
+    BANK_MANAGER_WORKER_QUEUE,
+    BANK_MANAGER_WORKER_EVENT_STORE,
+    BOE_DLQ_QUEUE,
+    BOE_DLQ_EXCHANGE,
+    BOE_DLQ_DEFAULT_ROUTING_KEY
+)
 from cbaxter1988_utils.log_utils import get_logger
 from cbaxter1988_utils.pika_utils import make_basic_pika_consumer, PikaQueueServiceWrapper
 from eventsourcing.application import AggregateNotFound
@@ -70,9 +77,9 @@ def main():
     queue_service_wrapper.create_queue(
         queue=BANK_MANAGER_WORKER_QUEUE,
         dlq_support=True,
-        dlq_queue='BOE_ERRORS',
-        dlq_exchange='BOE_ERROR_EXCHANGE',
-        dlq_routing_key='BOE_ERROR_ROUTING_KEY'
+        dlq_queue=BOE_DLQ_QUEUE,
+        dlq_exchange=BOE_DLQ_EXCHANGE,
+        dlq_routing_key=BOE_DLQ_DEFAULT_ROUTING_KEY
     )
 
     consumer = make_basic_pika_consumer(

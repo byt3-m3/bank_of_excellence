@@ -4,7 +4,14 @@ from dataclasses import dataclass
 
 import pika.exceptions
 from boe.applications.persistence_domain_app import PersistenceServiceApp, PersistenceDomainAppEventFactory
-from boe.env import AMQP_URL, PERSISTENCE_WORKER_QUEUE, PERSISTENCE_SERVICE_WORKER_EVENT_STORE
+from boe.env import (
+    AMQP_URL,
+    PERSISTENCE_WORKER_QUEUE,
+    PERSISTENCE_SERVICE_WORKER_EVENT_STORE,
+    BOE_DLQ_EXCHANGE,
+    BOE_DLQ_QUEUE,
+    BOE_DLQ_DEFAULT_ROUTING_KEY
+)
 from boe.lib.common_models import AppEvent
 from boe.lib.domains.bank_domain import BankDomainWriteModel
 from cbaxter1988_utils.log_utils import get_logger
@@ -74,9 +81,9 @@ def main():
     queue_service_wrapper.create_queue(
         queue=PERSISTENCE_WORKER_QUEUE,
         dlq_support=True,
-        dlq_queue='BOE_ERRORS',
-        dlq_exchange='BOE_ERROR_EXCHANGE',
-        dlq_routing_key='BOE_ERROR_ROUTING_KEY'
+        dlq_queue=BOE_DLQ_QUEUE,
+        dlq_exchange=BOE_DLQ_EXCHANGE,
+        dlq_routing_key=BOE_DLQ_DEFAULT_ROUTING_KEY
     )
 
     consumer = make_basic_pika_consumer(

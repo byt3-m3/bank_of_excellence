@@ -5,7 +5,14 @@ from boe.applications.store_domain_apps import (
     StoreManagerApp,
     StoreManagerAppEventFactory
 )
-from boe.env import AMQP_URL, STORE_MANAGER_WORKER_QUEUE, STORE_MANAGER_WORKER_EVENT_STORE
+from boe.env import (
+    AMQP_URL,
+    STORE_MANAGER_WORKER_QUEUE,
+    STORE_MANAGER_WORKER_EVENT_STORE,
+    BOE_DLQ_QUEUE,
+    BOE_DLQ_DEFAULT_ROUTING_KEY,
+    BOE_DLQ_EXCHANGE
+)
 from cbaxter1988_utils.log_utils import get_logger
 from cbaxter1988_utils.pika_utils import make_basic_pika_consumer, PikaQueueServiceWrapper
 from pika.adapters.blocking_connection import BlockingChannel
@@ -54,9 +61,9 @@ def main():
     queue_service_wrapper.create_queue(
         queue=STORE_MANAGER_WORKER_QUEUE,
         dlq_support=True,
-        dlq_queue='BOE_ERRORS',
-        dlq_exchange='BOE_ERROR_EXCHANGE',
-        dlq_routing_key='BOE_ERROR_ROUTING_KEY'
+        dlq_queue=BOE_DLQ_QUEUE,
+        dlq_exchange=BOE_DLQ_EXCHANGE,
+        dlq_routing_key=BOE_DLQ_DEFAULT_ROUTING_KEY
     )
 
     consumer = make_basic_pika_consumer(
