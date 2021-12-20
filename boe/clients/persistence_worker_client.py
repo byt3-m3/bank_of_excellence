@@ -1,9 +1,8 @@
 from boe.applications.persistence_domain_app import PersistenceDomainAppEventFactory
-from boe.env import AMQP_URL, PERSISTENCE_WORKER_QUEUE
+from boe.env import AMQP_URL, PERSISTENCE_WORKER_QUEUE, STAGE
 from boe.lib.domains.bank_domain import BankDomainAggregate
 from boe.utils.serialization_utils import serialize_model
 from cbaxter1988_utils.pika_utils import make_basic_pika_publisher
-
 
 class PersistenceWorkerClient:
 
@@ -12,8 +11,8 @@ class PersistenceWorkerClient:
         self.rabbit_client = make_basic_pika_publisher(
             amqp_url=AMQP_URL,
             queue=PERSISTENCE_WORKER_QUEUE,
-            exchange="P_WORKER_EXCHANGE",
-            routing_key="P_WORKER_KEY"
+            exchange=f"{STAGE}_PERSISTENCE_WORKER_EXCHANGE",
+            routing_key=f"{STAGE}_PERSISTENCE_WORKER_KEY"
 
         )
 
