@@ -1,7 +1,7 @@
+from boe.env import AMPQ_URL
+from boe.lib.common_models import AppEvent
+from boe.utils.serialization_utils import serialize_model
 from cbaxter1988_utils.pika_utils import make_basic_pika_publisher
-
-from boe.env import AMPQ_URL, BANK_MANAGER_WORKER_QUEUE
-from boe.utils.serialization_utils import serialize_aggregate
 
 
 class PikaWorkerClient:
@@ -14,9 +14,14 @@ class PikaWorkerClient:
 
         )
 
-    def _publish_event(self, event_name, event):
+    def publish_event(self, event_name, event: AppEvent):
         self.rabbit_client.publish_message(
             body={
                 event_name: serialize_model(event, convert_id=True)
             }
+        )
+
+    def publish(self, payload: dict):
+        self.rabbit_client.publish_message(
+            body=payload
         )
