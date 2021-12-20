@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 import pika.exceptions
 from boe.applications.persistence_domain_app import PersistenceServiceApp, PersistenceDomainAppEventFactory
-from boe.env import AMPQ_URL, PERSISTENCE_WORKER_QUEUE, PERSISTENCE_WORKER_SQLITE_EVENT_STORE
+from boe.env import AMQP_URL, PERSISTENCE_WORKER_QUEUE, PERSISTENCE_SERVICE_WORKER_EVENT_STORE
 from boe.lib.common_models import AppEvent
 from boe.lib.domains.bank_domain import BankDomainWriteModel
 from cbaxter1988_utils.log_utils import get_logger
@@ -15,7 +15,7 @@ from pika.spec import Basic, BasicProperties
 logger = get_logger("PersistenceServiceWorker")
 
 INFRASTRUCTURE_FACTORY = "eventsourcing.sqlite:Factory"
-SQLITE_DBNAME = PERSISTENCE_WORKER_SQLITE_EVENT_STORE
+SQLITE_DBNAME = PERSISTENCE_SERVICE_WORKER_EVENT_STORE
 
 os.environ['INFRASTRUCTURE_FACTORY'] = INFRASTRUCTURE_FACTORY
 os.environ['SQLITE_DBNAME'] = SQLITE_DBNAME
@@ -68,7 +68,7 @@ def on_message_callback(ch: BlockingChannel, method: Basic.Deliver, properties: 
 
 def main():
     queue_service_wrapper = PikaQueueServiceWrapper(
-        amqp_url=AMPQ_URL
+        amqp_url=AMQP_URL
     )
 
     queue_service_wrapper.create_queue(
@@ -80,7 +80,7 @@ def main():
     )
 
     consumer = make_basic_pika_consumer(
-        amqp_url=AMPQ_URL,
+        amqp_url=AMQP_URL,
         queue=PERSISTENCE_WORKER_QUEUE,
         on_message_callback=on_message_callback,
     )

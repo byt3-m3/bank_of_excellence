@@ -7,7 +7,7 @@ from boe.applications.bank_domain_apps import (
     BankManagerApp
 
 )
-from boe.env import AMPQ_URL, BANK_MANAGER_WORKER_QUEUE, BANK_MANAGER_WORKER_SQLITE_EVENT_STORE
+from boe.env import AMQP_URL, BANK_MANAGER_WORKER_QUEUE, BANK_MANAGER_WORKER_EVENT_STORE
 from cbaxter1988_utils.log_utils import get_logger
 from cbaxter1988_utils.pika_utils import make_basic_pika_consumer, PikaQueueServiceWrapper
 from eventsourcing.application import AggregateNotFound
@@ -17,7 +17,7 @@ from pika.spec import Basic, BasicProperties
 logger = get_logger("bank_manager_worker")
 
 INFRASTRUCTURE_FACTORY = "eventsourcing.sqlite:Factory"
-SQLITE_DBNAME = BANK_MANAGER_WORKER_SQLITE_EVENT_STORE
+SQLITE_DBNAME = BANK_MANAGER_WORKER_EVENT_STORE
 
 os.environ['INFRASTRUCTURE_FACTORY'] = INFRASTRUCTURE_FACTORY
 os.environ['SQLITE_DBNAME'] = SQLITE_DBNAME
@@ -64,7 +64,7 @@ def on_message_callback(ch: BlockingChannel, method: Basic.Deliver, properties: 
 
 def main():
     queue_service_wrapper = PikaQueueServiceWrapper(
-        amqp_url=AMPQ_URL
+        amqp_url=AMQP_URL
     )
 
     queue_service_wrapper.create_queue(
@@ -76,7 +76,7 @@ def main():
     )
 
     consumer = make_basic_pika_consumer(
-        amqp_url=AMPQ_URL,
+        amqp_url=AMQP_URL,
         queue=BANK_MANAGER_WORKER_QUEUE,
         on_message_callback=on_message_callback,
     )
