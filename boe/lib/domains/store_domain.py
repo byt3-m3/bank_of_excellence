@@ -4,7 +4,7 @@ from uuid import UUID, uuid4
 
 from boe.env import MONGO_HOST, MONGO_PORT, APP_DB, STORE_TABLE
 from boe.lib.common_models import Entity
-from boe.utils.serialization_utils import serialize_aggregate
+from boe.utils.serialization_utils import serialize_model
 from cbaxter1988_utils.pymongo_utils import (
     add_item,
     update_item,
@@ -89,7 +89,7 @@ class StoreDomainWriteModel:
             store_id=aggregate.id,
             store_items=aggregate.store_items
         )
-        serialized_data = serialize_aggregate(model=model)
+        serialized_data = serialize_model(model=model)
         try:
             add_item(collection=collection, item=serialized_data, key_id='store_id')
         except DuplicateKeyError:

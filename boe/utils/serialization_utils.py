@@ -4,7 +4,7 @@ from enum import Enum
 from typing import Union
 from uuid import UUID
 
-from boe.lib.common_models import Entity
+from boe.lib.common_models import Entity, AppEvent
 from eventsourcing.domain import Aggregate
 
 
@@ -29,7 +29,7 @@ def _serialize_list(items: list):
             _serialize_list(items=item)
 
 
-def serialize_aggregate(model: Union[Entity, Aggregate], convert_id: bool = False):
+def serialize_model(model: Union[Entity, Aggregate, AppEvent], convert_id: bool = False):
     data = asdict(model)
     if isinstance(model, Aggregate):
         data['version'] = model.version

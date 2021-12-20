@@ -1,7 +1,7 @@
 from boe.applications.persistence_domain_app import PersistenceDomainAppEventFactory
 from boe.env import AMPQ_URL, PERSISTENCE_WORKER_QUEUE
 from boe.lib.domains.bank_domain import BankDomainAggregate
-from boe.utils.serialization_utils import serialize_aggregate
+from boe.utils.serialization_utils import serialize_model
 from cbaxter1988_utils.pika_utils import make_basic_pika_publisher
 
 

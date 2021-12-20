@@ -13,7 +13,7 @@ from boe.env import (
     FAMILY_TABLE
 )
 from boe.lib.common_models import Entity
-from boe.utils.serialization_utils import serialize_aggregate
+from boe.utils.serialization_utils import serialize_model
 from cbaxter1988_utils.pymongo_utils import (
     get_client,
     get_database,
@@ -237,7 +237,7 @@ class UserDomainWriteModel:
         child_account_collection = get_collection(database=self.db, collection=CHILD_ACCOUNT_TABLE)
         adult_account_collection = get_collection(database=self.db, collection=ADULT_ACCOUNT_TABLE)
 
-        serialized_family_table_model = serialize_aggregate(family_table_model)
+        serialized_family_table_model = serialize_model(family_table_model)
         try:
             add_item(collection=family_collection, item=serialized_family_table_model)
 
@@ -245,7 +245,7 @@ class UserDomainWriteModel:
             update_item(collection=family_collection, item_id=aggregate.id, new_values=serialized_family_table_model)
 
         for child_table_model in child_table_models:
-            serialized_child_table_model = serialize_aggregate(child_table_model)
+            serialized_child_table_model = serialize_model(child_table_model)
             try:
                 add_item(collection=child_account_collection, item=serialized_child_table_model)
 
@@ -254,7 +254,7 @@ class UserDomainWriteModel:
                             new_values=serialized_child_table_model)
 
         for adult_table_model in adult_table_models:
-            serialized_adult_table_model = serialize_aggregate(adult_table_model)
+            serialized_adult_table_model = serialize_model(adult_table_model)
             try:
                 add_item(collection=adult_account_collection, item=serialized_adult_table_model)
 

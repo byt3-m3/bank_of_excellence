@@ -4,7 +4,7 @@ from boe.clients.persistence_worker_client import PersistenceWorkerClient
 from boe.clients.bank_manager_worker_client import BankManagerWorkerClient
 from boe.env import AMPQ_URL, BANK_MANAGER_WORKER_QUEUE, STORE_MANAGER_APP_QUEUE, PERSISTENCE_WORKER_QUEUE
 from boe.lib.domains.bank_domain import BankDomainFactory, BankTransactionMethodEnum
-from boe.utils.serialization_utils import serialize_aggregate
+from boe.utils.serialization_utils import serialize_model
 from cbaxter1988_utils.pika_utils import make_basic_pika_publisher
 
 bank_manager_worker_client = BankManagerWorkerClient()
@@ -58,7 +58,7 @@ def publish_save_aggregate_event():
 
     bank_account_agg = BankDomainFactory.build_bank_domain_aggregate(owner_id=uuid4(), is_overdraft_protected=False)
     # print(bank_account_agg)
-    data = serialize_aggregate(bank_account_agg)
+    data = serialize_model(bank_account_agg)
     data['bank_account']['id'] = str(data['bank_account']['id'])
     data['bank_account']['owner_id'] = str(data['bank_account']['owner_id'])
     data['bank_account']['owner_id'] = str(data['bank_account']['owner_id'])

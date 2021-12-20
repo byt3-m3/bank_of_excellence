@@ -17,6 +17,6 @@ class PikaWorkerClient:
     def _publish_event(self, event_name, event):
         self.rabbit_client.publish_message(
             body={
-                event_name: serialize_aggregate(event, convert_id=True)
+                event_name: serialize_model(event, convert_id=True)
             }
         )

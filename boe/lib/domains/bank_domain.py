@@ -6,7 +6,7 @@ from uuid import UUID, uuid4
 
 from boe.env import MONGO_HOST, MONGO_PORT, APP_DB, BANK_ACCOUNT_TABLE
 from boe.lib.common_models import Entity
-from boe.utils.serialization_utils import serialize_aggregate
+from boe.utils.serialization_utils import serialize_model
 from cbaxter1988_utils.pymongo_utils import (
     get_client,
     get_collection,
@@ -273,7 +273,7 @@ class BankDomainWriteModel:
             version=aggregate.version
 
         )
-        item_data = serialize_aggregate(model)
+        item_data = serialize_model(model)
 
         try:
 
