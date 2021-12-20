@@ -8,7 +8,7 @@ services:
       - AMQP_PW=guest
       - AMQP_HOST=192.168.1.5
       - AMQP_PORT=5672
-      - PERSISTENCE_WORKER_SQLITE_EVENT_STORE=event_store.sqllite
+      - PERSISTENCE_SERVICE_WORKER_EVENT_STORE=event_store.sqllite
       - STAGE=BETA
 
     command: python3 -m boe.workers.persistence_service_worker
@@ -20,7 +20,7 @@ services:
       - AMQP_PW=guest
       - AMQP_HOST=192.168.1.5
       - AMQP_PORT=5672
-      - BANK_MANAGER_WORKER_SQLITE_EVENT_STORE=event_store.sqllite
+      - BANK_MANAGER_WORKER_EVENT_STORE=event_store.sqllite
       - STAGE=BETA
 
     command: python3 -m boe.workers.bank_manager_worker
@@ -33,7 +33,7 @@ services:
       - AMQP_PW=guest
       - AMQP_HOST=192.168.1.5
       - AMQP_PORT=5672
-      - STORE_MANAGER_WORKER_SQLLITE_EVENT_STORE=event_store.sqllite
+      - STORE_MANAGER_WORKER_EVENT_STORE=event_store.sqllite
       - STAGE=BETA
 
     command: python3 -m boe.workers.store_manager_worker
