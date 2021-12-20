@@ -1,5 +1,6 @@
 from boe.env import AMQP_URL
 from boe.lib.common_models import AppEvent
+from boe.utils.core_utils import extract_type
 from boe.utils.serialization_utils import serialize_model
 from cbaxter1988_utils.pika_utils import make_basic_pika_publisher
 
@@ -14,10 +15,10 @@ class PikaWorkerClient:
 
         )
 
-    def publish_event(self, event_name, event: AppEvent):
+    def publish_event(self, event: AppEvent):
         self.rabbit_client.publish_message(
             body={
-                event_name: serialize_model(event, convert_id=True)
+                extract_type(event): serialize_model(event, convert_id=True)
             }
         )
 
