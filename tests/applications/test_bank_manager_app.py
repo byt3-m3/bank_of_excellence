@@ -18,6 +18,10 @@ def persistence_worker_client_mock():
     with patch("boe.applications.bank_domain_apps.PersistenceWorkerClient") as client_mock:
         yield client_mock
 
+@fixture
+def notification_worker_client_mock():
+    with patch("boe.applications.bank_domain_apps.NotificationWorkerClient") as client_mock:
+        yield client_mock
 
 @fixture
 def establish_new_account_event(user_account_uuid):
@@ -40,6 +44,7 @@ def _test_basic_test(bank_manager_app_testable):
 
 def test_bank_manager_app_when_handle_establish_new_account_event(
         persistence_worker_client_mock,
+notification_worker_client_mock,
         bank_manager_app_testable,
         establish_new_account_event
 ):
@@ -50,10 +55,12 @@ def test_bank_manager_app_when_handle_establish_new_account_event(
     aggregate = app.repository.get(_id)
     assert isinstance(aggregate, BankDomainAggregate)
     persistence_worker_client_mock.assert_called()
+    notification_worker_client_mock.assert_called()
 
 
 def test_bank_manager_app_when_handling_new_transaction_event(
         persistence_worker_client_mock,
+notification_worker_client_mock,
         bank_manager_app_testable,
         establish_new_account_event,
 ):
@@ -74,3 +81,4 @@ def test_bank_manager_app_when_handling_new_transaction_event(
     assert isinstance(aggregate, BankDomainAggregate)
     assert aggregate.bank_account.balance == 6
     persistence_worker_client_mock.assert_called()
+    notification_worker_client_mock.assert_called()
