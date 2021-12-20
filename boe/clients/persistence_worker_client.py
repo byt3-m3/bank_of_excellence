@@ -1,20 +1,19 @@
 from boe.applications.persistence_domain_app import PersistenceDomainAppEventFactory
-from boe.env import AMQP_URL, PERSISTENCE_WORKER_QUEUE, STAGE
+from boe.clients.client import PikaWorkerClient
+from boe.env import PERSISTENCE_WORKER_QUEUE, STAGE
 from boe.lib.domains.bank_domain import BankDomainAggregate
 from boe.utils.serialization_utils import serialize_model
-from cbaxter1988_utils.pika_utils import make_basic_pika_publisher
 
-class PersistenceWorkerClient:
+
+class PersistenceWorkerClient(PikaWorkerClient):
 
     def __init__(self):
-        self.app_event_factory = PersistenceDomainAppEventFactory()
-        self.rabbit_client = make_basic_pika_publisher(
-            amqp_url=AMQP_URL,
-            queue=PERSISTENCE_WORKER_QUEUE,
-            exchange=f"{STAGE}_PERSISTENCE_WORKER_EXCHANGE",
-            routing_key=f"{STAGE}_PERSISTENCE_WORKER_KEY"
-
+        super().__init__(
+            PERSISTENCE_WORKER_QUEUE,
+            f"{STAGE}_PERSISTENCE_WORKER_EXCHANGE",
+            f"{STAGE}_PERSISTENCE_WORKER_KEY"
         )
+        self.app_event_factory = PersistenceDomainAppEventFactory()
 
     def publish_persist_bank_domain_aggregate_event(self, aggregate: BankDomainAggregate):
         event = self.app_event_factory.build_persist_bank_domain_aggregate_event(
@@ -23,9 +22,6 @@ class PersistenceWorkerClient:
             payload_type='PersistBankDomainAggregateEvent'
         )
 
-        event_data = serialize_model(event, convert_id=True)
-        self.rabbit_client.publish_message(
-            body={
-                "PersistBankDomainAggregateEvent": event_data
-            }
+        self.publish_event(
+            event=event
         )
