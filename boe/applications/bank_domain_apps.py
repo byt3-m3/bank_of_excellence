@@ -7,6 +7,7 @@ from boe.applications.transcodings import (
     BankTransactionEntityTranscoding,
     BankAccountEntityTranscoding
 )
+from boe.clients.notification_worker_client import NotificationWorkerClient
 from boe.clients.persistence_worker_client import PersistenceWorkerClient
 from boe.lib.common_models import AppEvent
 from boe.lib.domains.bank_domain import (
@@ -31,6 +32,17 @@ class NewTransactionEvent(AppEvent):
     account_id: UUID
     transaction_method: BankTransactionMethodEnum
     value: float
+
+
+@dataclass(frozen=True)
+class BankAccountCreatedNotification(AppEvent):
+    account_id: str
+
+
+@dataclass(frozen=True)
+class BankTransactionProcessedNotification(AppEvent):
+    account_id: str
+    transaction_id: str
 
 
 class BankDomainAppEventFactory:
@@ -62,6 +74,7 @@ class BankManagerApp(Application):
         self.factory = BankDomainFactory()
         self.write_model = BankDomainWriteModel()
         self.persistence_worker_client = PersistenceWorkerClient()
+        self.notification_worker_client = NotificationWorkerClient()
 
     def register_transcodings(self, transcoder: Transcoder):
         super().register_transcodings(transcoder)
@@ -77,6 +90,9 @@ class BankManagerApp(Application):
         )
 
         self.save(aggregate)
+        self.notification_worker_client.publish_app_event(
+            event=BankAccountCreatedNotification(account_id=str(aggregate.id))
+        )
         self.persistence_worker_client.publish_persist_bank_domain_aggregate_event(
             aggregate=aggregate
         )
@@ -94,6 +110,13 @@ class BankManagerApp(Application):
         aggregate.apply_transaction_to_account(transaction=transaction)
 
         self.save(aggregate)
+        self.notification_worker_client.publish_app_event(
+            event=BankTransactionProcessedNotification(
+                account_id=str(aggregate.id),
+                transaction_id=str(transaction.id)
+            )
+        )
+
         self.persistence_worker_client.publish_persist_bank_domain_aggregate_event(
             aggregate=aggregate
         )
