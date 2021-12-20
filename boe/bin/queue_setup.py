@@ -1,5 +1,5 @@
 from boe.env import (
-    AMPQ_URL,
+    AMQP_URL,
     BANK_MANAGER_WORKER_QUEUE,
     PERSISTENCE_WORKER_QUEUE,
     STORE_MANAGER_WORKER_QUEUE,
@@ -13,7 +13,7 @@ from cbaxter1988_utils.pika_utils import PikaQueueServiceWrapper
 
 def validate_app_queues():
     queue_service_wrapper = PikaQueueServiceWrapper(
-        amqp_url=AMPQ_URL
+        amqp_url=AMQP_URL
     )
 
     queue_service_wrapper.create_queue(
