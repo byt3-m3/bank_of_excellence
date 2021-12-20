@@ -2,7 +2,7 @@ from uuid import uuid4
 
 from boe.clients.persistence_worker_client import PersistenceWorkerClient
 from boe.clients.bank_manager_worker_client import BankManagerWorkerClient
-from boe.env import AMPQ_URL, BANK_MANAGER_WORKER_QUEUE, STORE_MANAGER_APP_QUEUE, PERSISTENCE_WORKER_QUEUE
+from boe.env import AMPQ_URL, BANK_MANAGER_WORKER_QUEUE, STORE_MANAGER_WORKER_QUEUE, PERSISTENCE_WORKER_QUEUE
 from boe.lib.domains.bank_domain import BankDomainFactory, BankTransactionMethodEnum
 from boe.utils.serialization_utils import serialize_model
 from cbaxter1988_utils.pika_utils import make_basic_pika_publisher
@@ -32,7 +32,7 @@ def publish_new_transaction_event(account_id):
 def publish_new_store_event():
     publisher = make_basic_pika_publisher(
         amqp_url=AMPQ_URL,
-        queue=STORE_MANAGER_APP_QUEUE,
+        queue=STORE_MANAGER_WORKER_QUEUE,
         exchange="STORE_MANAGER_EXCHANGE",
         routing_key="STORE_MANAGER__KEY"
     )
