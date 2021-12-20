@@ -18,10 +18,12 @@ def persistence_worker_client_mock():
     with patch("boe.applications.bank_domain_apps.PersistenceWorkerClient") as client_mock:
         yield client_mock
 
+
 @fixture
 def notification_worker_client_mock():
     with patch("boe.applications.bank_domain_apps.NotificationWorkerClient") as client_mock:
         yield client_mock
+
 
 @fixture
 def establish_new_account_event(user_account_uuid):
@@ -44,7 +46,7 @@ def _test_basic_test(bank_manager_app_testable):
 
 def test_bank_manager_app_when_handle_establish_new_account_event(
         persistence_worker_client_mock,
-notification_worker_client_mock,
+        notification_worker_client_mock,
         bank_manager_app_testable,
         establish_new_account_event
 ):
@@ -60,7 +62,7 @@ notification_worker_client_mock,
 
 def test_bank_manager_app_when_handling_new_transaction_event(
         persistence_worker_client_mock,
-notification_worker_client_mock,
+        notification_worker_client_mock,
         bank_manager_app_testable,
         establish_new_account_event,
 ):
