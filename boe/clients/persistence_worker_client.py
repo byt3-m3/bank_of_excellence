@@ -20,11 +20,11 @@ class PersistenceWorkerClient:
     def publish_persist_bank_domain_aggregate_event(self, aggregate: BankDomainAggregate):
         event = self.app_event_factory.build_persist_bank_domain_aggregate_event(
             aggregate_id=str(aggregate.id),
-            payload=serialize_aggregate(aggregate),
+            payload=serialize_model(aggregate),
             payload_type='PersistBankDomainAggregateEvent'
         )
 
-        event_data = serialize_aggregate(event, convert_id=True)
+        event_data = serialize_model(event, convert_id=True)
         self.rabbit_client.publish_message(
             body={
                 "PersistBankDomainAggregateEvent": event_data
