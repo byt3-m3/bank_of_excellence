@@ -1,11 +1,12 @@
 import json
+from typing import Union
 
 from boe.env import AMQP_URL
 from boe.lib.common_models import AppEvent, AppNotification
 from boe.utils.core_utils import extract_type
 from boe.utils.serialization_utils import serialize_dataclass_to_json
 from cbaxter1988_utils.pika_utils import make_basic_pika_publisher
-from typing import Union
+
 
 class PikaWorkerClient:
     def __init__(self, worker_que, worker_exchange, worker_routing_key):
