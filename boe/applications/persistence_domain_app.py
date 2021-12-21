@@ -77,3 +77,22 @@ class PersistenceServiceApp(Application):
         logger.info(f"Persisted {event.payload}")
         self.save(aggregate)
         return aggregate.id
+
+    def handle_persist_family_user_aggregate(self, event: PersistFamilyUserAggregateEvent) -> UUID:
+        try:
+            aggregate = self.get_persistence_aggregate(_id=event.aggregate_id)
+
+        except AggregateNotFound as err:
+            logger.error(f'Encountered Error {AggregateNotFound}: "{str(err)}"')
+            logger.warn(f"Aggregate: '{event.aggregate_id}' Not Found, Creating..")
+            aggregate = self.persistence_domain_factory.build_persistence_aggregate(
+                aggregate_id=str(event.aggregate_id),
+                aggregate_type=event.payload_type
+            )
+
+        aggregate.persist_family_aggregate(
+            payload=event.payload
+        )
+        logger.info(f"Persisted {event.payload}")
+        self.save(aggregate)
+        return aggregate.id

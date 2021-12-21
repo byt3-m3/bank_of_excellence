@@ -42,6 +42,10 @@ write_model_map = {
     "PersistBankDomainAggregateEvent": {
         "handler": persistence_service_app.handle_persist_bank_domain_aggregate,
         "factory_func": PersistenceDomainAppEventFactory.build_persist_bank_domain_aggregate_event
+    },
+    "PersistFamilyUserAggregateEvent": {
+        "handler": persistence_service_app.handle_persist_family_user_aggregate,
+        "factory_func": PersistenceDomainAppEventFactory.build_persist_family_user_aggregate_event
     }
 }
 
