@@ -26,8 +26,6 @@ from pymongo.errors import DuplicateKeyError
 from serde import deserialize, serialize
 
 
-@serialize
-@deserialize
 class UserAccountTypeEnum(Enum):
     adult = 0
     child = 1
@@ -287,14 +285,14 @@ class UserDomainFactory:
 
     @staticmethod
     def rebuild_family(
-            _id: UUID,
+            id: UUID,
             name: str,
             description: str,
             subscription_type: SubscriptionTypeEnum,
             **kwargs
     ) -> FamilyEntity:
         return FamilyEntity(
-            id=_id,
+            id=id,
             name=name,
             description=description,
             subscription_type=subscription_type
@@ -384,13 +382,13 @@ class UserDomainFactory:
 
     @staticmethod
     def rebuild_user_account(
-            _id,
+            id,
             account_type,
             account_detail,
             **kwargs
     ) -> UserAccountEntity:
         return UserAccountEntity(
-            id=_id,
+            id=id,
             account_detail=account_detail,
             account_type=account_type
         )
@@ -437,12 +435,6 @@ class UserDomainFactory:
             name=name,
             subscription_type=subscription_type,
             members=members
-        )
-
-    @staticmethod
-    def rebuild_family_user_aggregate():
-        return FamilyUserAggregate.create(
-
         )
 
 
