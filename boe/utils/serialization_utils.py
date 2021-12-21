@@ -1,61 +1,20 @@
-import datetime
-from dataclasses import asdict
-from enum import Enum
+from dataclasses import is_dataclass
 from typing import Union
-from uuid import UUID
 
 from boe.lib.common_models import Entity, AppEvent
 from eventsourcing.domain import Aggregate
+from serde.json import to_json, to_dict
 
 
-def _serialize_dict(item: dict, convert_id: bool=False):
-    for key, val in item.items():
-        if isinstance(val, UUID):
-            item[key] = str(val)
-
-        if isinstance(val, datetime.datetime):
-            item[key] = str(val)
-
-        if isinstance(val, Enum):
-            item[key] = val.value
+def serialize_dataclass_to_json(model: Union[Entity, Aggregate, AppEvent], convert_id: bool = False):
+    if is_dataclass(model):
+        return to_json(model)
+    else:
+        raise ValueError(f'Invalid Type, Must be an instance of dataclasses.dataclass')
 
 
-def _serialize_list(items: list):
-    for i, item in enumerate(items):
-        if isinstance(item, dict):
-            _serialize_dict(item)
-
-        if isinstance(item, list):
-            _serialize_list(items=item)
-
-
-def serialize_model(model: Union[Entity, Aggregate, AppEvent], convert_id: bool = False):
-    data = asdict(model)
-    if isinstance(model, Aggregate):
-        data['version'] = model.version
-
-    for key, val in data.items():
-        if isinstance(val, Enum):
-            data[key] = val.value
-
-        if convert_id:
-            if isinstance(val, UUID):
-                data[key] = str(val)
-
-        if isinstance(val, list):
-            _serialize_list(items=val)
-
-        if isinstance(val, dict):
-            _serialize_dict(item=val, convert_id=convert_id)
-
-    return data
-
-
-def serialize_dataclass(model):
-    data = asdict(model)
-
-    for key, val in data.items():
-        if isinstance(val, Enum):
-            data[key] = val.value
-
-    return data
+def serialize_dataclass_to_dict(model: Union[Entity, Aggregate, AppEvent], convert_id: bool = False):
+    if is_dataclass(model):
+        return to_dict(model)
+    else:
+        raise ValueError(f'Invalid Type, Must be an instance of dataclasses.dataclass')
