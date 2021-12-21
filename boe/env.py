@@ -12,7 +12,7 @@ _BANK_ACCOUNT_TABLE_ID = os.getenv("BANK_ACCOUNT_TABLE_ID", "bank_account_table"
 _BANK_TRANSACTION_TABLE_ID = os.getenv("BANK_ACCOUNT_TABLE_ID", "bank_transaction_table")
 _CHILD_ACCOUNT_TABLE_ID = os.getenv("CHILD_ACCOUNT_TABLE_ID", "child_account_table")
 _ADULT_ACCOUNT_TABLE_ID = os.getenv("ADULT_ACCOUNT_TABLE_ID", "adult_account_table")
-_FAMILY_TABLE_ID = os.getenv("USER_ACCOUNT_TABLE_ID", "family_table")
+_FAMILY_TABLE_ID = os.getenv("USER_ACCOUNT_TABLE_ID", "family_aggregate_table")
 _STORE_TABLE_ID = os.getenv("STORE_TABLE_ID", "store_table")
 
 APP_DB = f'{STAGE}_{_APP_DB}'.upper()
