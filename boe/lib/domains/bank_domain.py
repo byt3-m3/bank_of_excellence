@@ -17,6 +17,7 @@ from cbaxter1988_utils.pymongo_utils import (
 )
 from eventsourcing.domain import Aggregate, event
 from pymongo.errors import DuplicateKeyError
+from serde import serialize, deserialize
 
 
 class BankAccountStateEnum(Enum):
@@ -40,6 +41,8 @@ class BankAccountTableModel:
     version: int
 
 
+@serialize
+@deserialize
 @dataclass
 class BankTransactionEntity(Entity):
     account_id: UUID
@@ -49,6 +52,8 @@ class BankTransactionEntity(Entity):
     method: BankTransactionMethodEnum = field(default_factory=BankTransactionMethodEnum)
 
 
+@serialize
+@deserialize
 @dataclass(frozen=True)
 class BankTransactionValueObject:
     account_id: UUID
@@ -58,6 +63,8 @@ class BankTransactionValueObject:
     method: BankTransactionMethodEnum = field(default_factory=BankTransactionMethodEnum)
 
 
+@serialize
+@deserialize
 @dataclass
 class BankAccountEntity(Entity):
     owner_id: UUID
@@ -66,6 +73,8 @@ class BankAccountEntity(Entity):
     balance: float = field(default=0)
 
 
+@serialize
+@deserialize
 @dataclass
 class BankDomainAggregate(Aggregate):
     bank_account: BankAccountEntity
@@ -263,25 +272,16 @@ class BankDomainWriteModel:
 
     def save_bank_aggregate(self, aggregate: BankDomainAggregate) -> UUID:
         collection = get_collection(database=self.db, collection=BANK_ACCOUNT_TABLE)
-        model = BankAccountTableModel(
-            id=aggregate.id,
-            is_overdraft_protected=aggregate.bank_account.is_overdraft_protected,
-            owner_id=aggregate.bank_account.owner_id,
-            state=aggregate.bank_account.state,
-            transactions=aggregate.bank_transactions,
-            balance=aggregate.bank_account.balance,
-            version=aggregate.version
 
-        )
-        item_data = serialize_dataclass_to_dict(model=model)
-
+        item_data = serialize_dataclass_to_dict(model=aggregate)
+        item_data['id'] = aggregate.id
         try:
 
             add_item(collection=collection, item=item_data, key_id='id')
             return aggregate.id
 
         except DuplicateKeyError:
-            result = update_item(
+            update_item(
                 collection=collection,
                 item_id=aggregate.id,
                 new_values=item_data
