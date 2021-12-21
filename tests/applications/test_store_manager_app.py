@@ -1,12 +1,12 @@
-from unittest.mock import patch
 from uuid import uuid4
-
+from unittest.mock import patch
 from boe.applications.store_domain_apps import StoreManagerApp, StoreManagerAppEventFactory
 from pytest import fixture
 
 
 @fixture
 def store_domain_write_model_mock():
+    pass
     with patch("boe.applications.store_domain_apps.StoreDomainWriteModel") as write_model_mock:
         yield write_model_mock
 

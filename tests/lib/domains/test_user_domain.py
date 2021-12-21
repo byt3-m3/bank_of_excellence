@@ -1,4 +1,5 @@
 from datetime import datetime
+from uuid import UUID
 
 import pytest
 from boe.lib.domains.user_domain import (
@@ -11,7 +12,36 @@ from boe.lib.domains.user_domain import (
     UserDomainRepository,
     FamilyUserAggregate
 )
+from boe.utils.serialization_utils import serialize_dataclass_to_dict
 from pytest import fixture
+
+
+@fixture
+def family_aggregate_dict():
+    return {
+        "_id": UUID("8882518b-8866-4474-9264-ce920dff8acf"),
+        "family": {
+            "id": UUID("8882518b-8866-4474-9264-ce920dff8acf"),
+            "name": "TEST_NAME",
+            "description": "TEST_DESCRIPTION",
+            "subscription_type": 0
+        },
+        "member_map": {
+            "1f939a5c-d622-43ae-87f2-ce7625ab9947": {
+                "id": UUID("1f939a5c-d622-43ae-87f2-ce7625ab9947"),
+                "account_type": {},
+                "account_detail": {
+                    "first_name": "test_firstname",
+                    "last_name": "test_lastname",
+                    "email": "test_email",
+                    "dob": datetime.now(),
+                    "age": 7,
+                    "grade": 2
+                }
+            }
+        },
+        "version": 2
+    }
 
 
 @fixture
@@ -125,6 +155,7 @@ def test_family_user_aggregate_when_creating_new_adult_member(family_user_aggreg
 
 def test_family_user_aggregate_when_creating_new_child_member(family_user_aggregate):
     aggregate: FamilyUserAggregate = family_user_aggregate
+
     aggregate.create_new_child_member(
         first_name='TEST_NAME',
         last_name='LAST_NAME',
@@ -135,3 +166,23 @@ def test_family_user_aggregate_when_creating_new_child_member(family_user_aggreg
     )
 
     assert len(aggregate.member_map) == 1
+
+
+def _test_family_user_aggregate_when_rebuilding_from_dict(family_aggregate_dict):
+    aggregate = FamilyUserAggregate.from_dict(data=family_aggregate_dict)
+
+    print(aggregate)
+
+
+def test_family_user_aggregate_when_serializing(family_user_aggregate):
+    aggregate = family_user_aggregate
+
+    aggregate.create_new_adult_member(
+        first_name='TEST_NAME',
+        last_name='LAST_NAME',
+        email='TEST@EMAIL.COM'
+    )
+    aggregate_dict = serialize_dataclass_to_dict(family_user_aggregate)
+
+    assert aggregate.id == aggregate_dict.get("family")['id']
+    assert aggregate.family.subscription_type.value == aggregate_dict.get("family")['subscription_type']

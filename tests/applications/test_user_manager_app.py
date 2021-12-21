@@ -12,8 +12,8 @@ from pytest import fixture
 
 
 @fixture
-def persistence_worker_client_mock():
-    with patch("boe.applications.user_manager_app.PersistenceWorkerClient") as client_mock:
+def write_model_mock():
+    with patch("boe.applications.user_manager_app.UserDomainWriteModel") as client_mock:
         yield client_mock
 
 
@@ -74,7 +74,7 @@ def new_family_app_event_premium():
 
 def test_user_manager_app_when_handling_new_family_app_event(
         notification_worker_client_mock,
-        persistence_worker_client_mock,
+        write_model_mock,
         user_manager_app_testable,
         new_family_app_event_basic
 ):
@@ -84,13 +84,13 @@ def test_user_manager_app_when_handling_new_family_app_event(
     result = app.handle_new_family_event(event=event)
     assert isinstance(result, UUID)
 
-    persistence_worker_client_mock.assert_called()
+    write_model_mock.assert_called()
     notification_worker_client_mock.assert_called()
 
 
 def test_user_manager_app_when_handling_new_child_account_event(
         notification_worker_client_mock,
-        persistence_worker_client_mock,
+        write_model_mock,
         user_manager_app_testable,
         new_family_app_event_basic
 ):
@@ -111,14 +111,13 @@ def test_user_manager_app_when_handling_new_child_account_event(
 
     app.handle_new_child_account_event(event=new_child_account_event)
 
-    persistence_worker_client_mock.assert_called()
+    write_model_mock.assert_called()
     notification_worker_client_mock.assert_called()
-
 
 
 def test_user_manager_app_when_handling_family_subscription_change_event(
         notification_worker_client_mock,
-        persistence_worker_client_mock,
+        write_model_mock,
         user_manager_app_testable,
         new_family_app_event_basic
 ):
@@ -134,5 +133,5 @@ def test_user_manager_app_when_handling_family_subscription_change_event(
 
     app.handle_family_subscription_type_change_event(event=sub_change_event)
 
-    persistence_worker_client_mock.assert_called()
+    write_model_mock.assert_called()
     notification_worker_client_mock.assert_called()
