@@ -14,7 +14,14 @@ logger = get_logger("PersistenceServiceApp")
 
 @dataclass(frozen=True)
 class PersistBankDomainAggregateEvent(AppEvent):
-    aggregate_id: UUID
+    aggregate_id: str
+    payload: dict
+    payload_type: str
+
+
+@dataclass(frozen=True)
+class PersistFamilyUserAggregateEvent(AppEvent):
+    aggregate_id: str
     payload: dict
     payload_type: str
 
@@ -24,7 +31,15 @@ class PersistenceDomainAppEventFactory:
     @staticmethod
     def build_persist_bank_domain_aggregate_event(aggregate_id: str, payload: dict, payload_type: str):
         return PersistBankDomainAggregateEvent(
-            aggregate_id=UUID(aggregate_id),
+            aggregate_id=aggregate_id,
+            payload=payload,
+            payload_type=payload_type
+        )
+
+    @staticmethod
+    def build_persist_family_user_aggregate_event(aggregate_id: str, payload: dict, payload_type: str):
+        return PersistFamilyUserAggregateEvent(
+            aggregate_id=str(aggregate_id),
             payload=payload,
             payload_type=payload_type
         )
@@ -52,7 +67,7 @@ class PersistenceServiceApp(Application):
             logger.error(f'Encountered Error {AggregateNotFound}: "{str(err)}"')
             logger.warn(f"Aggregate: '{event.aggregate_id}' Not Found, Creating..")
             aggregate = self.persistence_domain_factory.build_persistence_aggregate(
-                aggregate_id=event.aggregate_id,
+                aggregate_id=str(event.aggregate_id),
                 aggregate_type=event.payload_type
             )
 

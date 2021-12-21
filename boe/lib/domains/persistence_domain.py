@@ -5,6 +5,7 @@ from uuid import uuid4, UUID
 
 from boe.lib.common_models import Entity
 from boe.lib.domains.bank_domain import BankDomainWriteModel, BankDomainFactory
+from boe.lib.domains.user_domain import UserDomainWriteModel, UserDomainFactory
 from eventsourcing.domain import Aggregate, event
 
 
@@ -32,6 +33,10 @@ class PersistenceAggregate(Aggregate):
     def __init__(self, requests: List[PersistenceRequest], record: PersistenceRecord):
         self.bank_domain_write_model = BankDomainWriteModel()
         self.bank_domain_factory = BankDomainFactory()
+
+        self.user_domain_write_model = UserDomainWriteModel()
+        self.user_domain_factory = UserDomainFactory()
+
         self.requests = requests
         self.record = record
 
@@ -62,6 +67,19 @@ class PersistenceAggregate(Aggregate):
         )
 
         self.requests.append(request)
+
+    @event
+    def persist_family_aggregate(self, payload: dict):
+        request = PersistenceDomainFactory.build_persistence_request(
+            payload=payload,
+            _id=payload.get("id")
+        )
+
+        self.user_domain_write_model.save_family_user_aggregate(
+            aggregate=self.user_domain_factory.rebuild_family(
+                **payload
+            )
+        )
 
 
 class PersistenceDomainFactory:
