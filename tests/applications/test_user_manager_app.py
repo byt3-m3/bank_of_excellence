@@ -2,7 +2,7 @@ import datetime
 from unittest.mock import patch
 from uuid import UUID
 
-from boe.applications.user_manager_app import (
+from boe.applications.user_domain_apps import (
     UserManagerApp,
     NewFamilyEvent,
     SubscriptionTypeEnum,
@@ -13,13 +13,13 @@ from pytest import fixture
 
 @fixture
 def write_model_mock():
-    with patch("boe.applications.user_manager_app.UserDomainWriteModel") as client_mock:
+    with patch("boe.applications.user_domain_apps.UserDomainWriteModel") as client_mock:
         yield client_mock
 
 
 @fixture
 def notification_worker_client_mock():
-    with patch("boe.applications.user_manager_app.NotificationWorkerClient") as client_mock:
+    with patch("boe.applications.user_domain_apps.NotificationWorkerClient") as client_mock:
         yield client_mock
 
 

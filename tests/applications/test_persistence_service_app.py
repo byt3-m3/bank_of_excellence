@@ -1,4 +1,4 @@
-from boe.applications.persistence_domain_app import (
+from boe.applications.persistence_domain_apps import (
     PersistenceServiceApp,
     PersistenceDomainAppEventFactory,
     PersistBankDomainAggregateEvent
