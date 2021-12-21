@@ -1,9 +1,11 @@
-from boe.env import AMQP_URL
-from boe.lib.common_models import AppEvent
-from boe.utils.core_utils import extract_type
-from boe.utils.serialization_utils import serialize_model
-from cbaxter1988_utils.pika_utils import make_basic_pika_publisher
+import json
 
+from boe.env import AMQP_URL
+from boe.lib.common_models import AppEvent, AppNotification
+from boe.utils.core_utils import extract_type
+from boe.utils.serialization_utils import serialize_dataclass_to_json
+from cbaxter1988_utils.pika_utils import make_basic_pika_publisher
+from typing import Union
 
 class PikaWorkerClient:
     def __init__(self, worker_que, worker_exchange, worker_routing_key):
@@ -15,10 +17,10 @@ class PikaWorkerClient:
 
         )
 
-    def publish_event(self, event: AppEvent):
+    def publish_event(self, event: Union[AppEvent, AppNotification]):
         self.rabbit_client.publish_message(
             body={
-                extract_type(event): serialize_model(event, convert_id=True)
+                extract_type(event): json.loads(serialize_dataclass_to_json(event))
             }
         )
 
