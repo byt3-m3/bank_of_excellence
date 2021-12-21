@@ -44,7 +44,7 @@ class StoreEntity(Entity):
 @dataclass
 class StoreAggregate(Aggregate):
     store: StoreEntity
-    store_item_map: Dict[UUID, dict]
+    store_item_map: Dict[str, StoreItemEntity]
 
     @classmethod
     def create(cls, store: StoreEntity, store_item_map: Dict[UUID, dict]):
@@ -57,10 +57,10 @@ class StoreAggregate(Aggregate):
 
     def _update_store_item_map(self, item: StoreItemEntity):
         if item.id not in self.store_item_map.keys():
-            self.store_item_map[item.id] = asdict(item)
+            self.store_item_map[str(item.id)] = item
 
         else:
-            self.store_item_map.update({item.id: asdict(item)})
+            self.store_item_map.update({str(item.id): item})
 
     @property
     def store_item_ids(self):
@@ -75,7 +75,7 @@ class StoreAggregate(Aggregate):
         self._update_store_item_map(item=store_item)
 
     @event
-    def remove_store_item(self, item_id: UUID):
+    def remove_store_item(self, item_id: str):
         self.store_item_map.pop(item_id)
 
 
@@ -96,9 +96,11 @@ class StoreDomainWriteModel:
             store_id=aggregate.id,
             store_items=aggregate.store_items
         )
-        serialized_data = serialize_dataclass_to_dict(model=model)
+        serialized_data = serialize_dataclass_to_dict(model=aggregate)
+        serialized_data['id'] = aggregate.id
+
         try:
-            add_item(collection=collection, item=serialized_data, key_id='store_id')
+            add_item(collection=collection, item=serialized_data, key_id='id')
         except DuplicateKeyError:
             update_item(collection=collection, item_id=aggregate.id, new_values=serialized_data)
 
