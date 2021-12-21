@@ -4,6 +4,11 @@ from uuid import UUID
 from pytest import fixture
 
 
+@fixture(autouse=True)
+def set_stage():
+    os.environ['STAGE'] = 'TEST'
+
+
 @fixture
 def set_env():
     INFRASTRUCTURE_FACTORY = "eventsourcing.sqlite:Factory"
