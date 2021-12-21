@@ -17,14 +17,19 @@ from boe.lib.domains.bank_domain import (
 )
 from eventsourcing.application import Application
 from eventsourcing.persistence import Transcoder
+from serde import serialize, deserialize
 
 
+@serialize
+@deserialize
 @dataclass(frozen=True)
 class EstablishNewAccountEvent(AppEvent):
     owner_id: UUID
     is_overdraft_protected: bool
 
 
+@serialize
+@deserialize
 @dataclass(frozen=True)
 class NewTransactionEvent(AppEvent):
     item_id: UUID
@@ -33,11 +38,15 @@ class NewTransactionEvent(AppEvent):
     value: float
 
 
+@serialize
+@deserialize
 @dataclass(frozen=True)
 class BankAccountCreatedNotification(AppEvent):
     account_id: str
 
 
+@serialize
+@deserialize
 @dataclass(frozen=True)
 class BankTransactionProcessedNotification(AppEvent):
     account_id: str
