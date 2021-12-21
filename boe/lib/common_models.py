@@ -10,3 +10,8 @@ class Entity:
 @dataclass(frozen=True)
 class AppEvent:
     pass
+
+
+@dataclass(frozen=True)
+class AppNotification:
+    pass
