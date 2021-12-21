@@ -1,4 +1,4 @@
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from typing import Dict, List
 from uuid import UUID, uuid4
 
@@ -14,6 +14,7 @@ from cbaxter1988_utils.pymongo_utils import (
 )
 from eventsourcing.domain import Aggregate, event
 from pymongo.errors import DuplicateKeyError
+from serde import deserialize, serialize
 
 
 @dataclass(frozen=True)
@@ -22,6 +23,8 @@ class StoreTableModel:
     store_items: List[dict]
 
 
+@serialize
+@deserialize
 @dataclass
 class StoreItemEntity(Entity):
     value: float
@@ -29,11 +32,15 @@ class StoreItemEntity(Entity):
     description: str
 
 
+@serialize
+@deserialize
 @dataclass
 class StoreEntity(Entity):
     family_id: UUID
 
 
+@serialize
+@deserialize
 @dataclass
 class StoreAggregate(Aggregate):
     store: StoreEntity
