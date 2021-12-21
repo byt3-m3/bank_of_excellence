@@ -13,12 +13,12 @@ from boe.applications.transcodings import (
     UserAccountDetailTranscoding
 )
 from boe.clients.notification_worker_client import NotificationWorkerClient
-from boe.clients.persistence_worker_client import PersistenceWorkerClient
 from boe.lib.common_models import AppEvent, AppNotification
 from boe.lib.domains.user_domain import (
     UserDomainFactory,
     SubscriptionTypeEnum,
-    FamilyUserAggregate
+    FamilyUserAggregate,
+    UserDomainWriteModel
 )
 from cbaxter1988_utils.log_utils import get_logger
 from eventsourcing.application import Application
@@ -127,8 +127,8 @@ class UserManagerApp(Application):
         super().__init__()
         self.factory = UserDomainFactory()
 
-        self.persistence_service_client = PersistenceWorkerClient()
         self.notification_service_client = NotificationWorkerClient()
+        self.write_model = UserDomainWriteModel()
 
     def register_transcodings(self, transcoder: Transcoder):
         super().register_transcodings(transcoder)
@@ -143,6 +143,15 @@ class UserManagerApp(Application):
     def _get_family_aggregate(self, family_id: UUID) -> FamilyUserAggregate:
         return self.repository.get(aggregate_id=family_id)
 
+    def _save_aggregate(self, aggregate: FamilyUserAggregate):
+        self.save(aggregate)
+
+        try:
+            self.write_model.save_family_user_aggregate(aggregate=aggregate)
+        except Exception:
+            logger.error(f"Trouble Saving Aggregate {aggregate}")
+            raise
+
     def get_user_account(self, family_id: UUID, account_id: UUID):
         aggregate: FamilyUserAggregate = self.repository.get(aggregate_id=family_id)
         return aggregate.member_map.get(account_id)
@@ -153,9 +162,9 @@ class UserManagerApp(Application):
             name=event.name,
             subscription_type=event.subscription_type
         )
-        self.save(family)
 
-        self.persistence_service_client.publish_persist_family_aggregate_event(aggregate=family)
+        self._save_aggregate(aggregate=family)
+
         self.notification_service_client.publish_event(
             event=UserManagerAppEventFactory.build_family_created_notification(
                 aggregate_id=str(family.id)
@@ -176,9 +185,7 @@ class UserManagerApp(Application):
 
         aggregate.add_family_member(user_account=child_account)
 
-        self.save(aggregate)
-
-        self.persistence_service_client.publish_persist_family_aggregate_event(aggregate=aggregate)
+        self._save_aggregate(aggregate=aggregate)
         self.notification_service_client.publish_event(
             event=UserManagerAppEventFactory.build_child_created_notification(
                 child_id=str(child_account.id),
@@ -195,6 +202,5 @@ class UserManagerApp(Application):
 
         aggregate.change_subscription_type(subscription_type=event.subscription_type)
 
-        self.save(aggregate)
-        self.persistence_service_client.publish_persist_family_aggregate_event(aggregate=aggregate)
+        self._save_aggregate(aggregate=aggregate)
         return aggregate.id

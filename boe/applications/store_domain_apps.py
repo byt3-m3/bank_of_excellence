@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from logging import getLogger
 from uuid import UUID
 
 from boe.applications.transcodings import StoreEntityTranscoding, StoreItemEntityTranscoding
@@ -10,7 +11,6 @@ from boe.lib.domains.store_domain import (
 )
 from eventsourcing.application import Application
 from eventsourcing.persistence import Transcoder
-from logging import getLogger
 
 logger = getLogger("StoreManagerApp")
 
@@ -82,13 +82,18 @@ class StoreManagerApp(Application):
         transcoder.register(StoreEntityTranscoding())
         transcoder.register(StoreItemEntityTranscoding())
 
+    def _save_aggregate(self, aggregate: StoreAggregate):
+        self.save(aggregate)
+        self.write_model.save_store_aggregate(
+            aggregate=aggregate
+        )
+
     def handle_new_store_event(self, event: NewStoreEvent) -> UUID:
         store_aggregate = self.factory.build_store_aggregate(
             family_id=event.family_id
         )
 
-        self.save(store_aggregate)
-        self.write_model.save_store_aggregate(aggregate=store_aggregate)
+        self._save_aggregate(aggregate=store_aggregate)
 
         logger.info(f"Created Store: {store_aggregate.id}")
         return store_aggregate.id
@@ -104,18 +109,16 @@ class StoreManagerApp(Application):
 
         store.new_store_item(store_item=store_item)
 
-        self.write_model.save_store_aggregate(aggregate=store)
-        self.save(store)
+        self._save_aggregate(aggregate=store)
         logger.info(f"Added Item='{store_item.id}' to Store='{store.id}'")
         return store.id
 
     def handle_remove_store_item_event(self, event: RemoveStoreItemEvent) -> UUID:
         store = self.get_store(aggregate_id=event.store_id)
         store.remove_store_item(
-            item_id=event.item_id
+            item_id=str(event.item_id)
         )
 
-        self.write_model.save_store_aggregate(aggregate=store)
-        self.save(store)
+        self._save_aggregate(aggregate=store)
         logger.info(f"Removed Item='{event.item_id}' from Store='{store.id}'")
         return store.id
