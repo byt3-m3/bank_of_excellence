@@ -21,7 +21,7 @@ class BankManagerWorkerClient(PikaWorkerClient):
             is_overdraft_protected=True
         )
 
-        self.publish_event(event=event, event_name='EstablishNewAccountEvent')
+        self.publish_event(event=event)
 
     def publish_new_transaction_event(
             self,
@@ -38,6 +38,6 @@ class BankManagerWorkerClient(PikaWorkerClient):
         )
 
         self.publish_event(
-            event_name='NewTransactionEvent',
+
             event=event
         )
