@@ -13,11 +13,9 @@ from boe.lib.domains.store_domain import (
 )
 from boe.lib.domains.user_domain import (
     FamilyEntity,
-    UserAccountEntity,
+
     SubscriptionTypeEnum,
-    ChildAccountDetail,
-    AdultAccountDetail,
-    UserAccountDetail,
+
     UserAccountTypeEnum
 )
 from eventsourcing.persistence import Transcoding
@@ -67,39 +65,6 @@ class StoreEntityTranscoding(Transcoding):
         return StoreEntity(**d)
 
 
-class UserAccountDetailTranscoding(Transcoding):
-    type = AdultAccountDetail
-    name = "AdultAccountDetail"
-
-    def encode(self, o: UserAccountDetail) -> str:
-        return asdict(o)
-
-    def decode(self, d: dict):
-        return UserAccountDetail(**d)
-
-
-class AdultAccountDetailTranscoding(Transcoding):
-    type = AdultAccountDetail
-    name = "AdultAccountDetail"
-
-    def encode(self, o: AdultAccountDetail) -> str:
-        return asdict(o)
-
-    def decode(self, d: dict):
-        return AdultAccountDetail(**d)
-
-
-class ChildAccountDetailTranscoding(Transcoding):
-    type = ChildAccountDetail
-    name = "ChildAccountDetail"
-
-    def encode(self, o: ChildAccountDetail) -> str:
-        return asdict(o)
-
-    def decode(self, d: dict):
-        return ChildAccountDetail(**d)
-
-
 class UserAccountTypeEnumTranscoding(Transcoding):
     type = UserAccountTypeEnum
     name = "UserAccountTypeEnum"
@@ -120,17 +85,6 @@ class SubscriptionTypeEnumTranscoding(Transcoding):
 
     def decode(self, d: int):
         return SubscriptionTypeEnum(d)
-
-
-class UserAccountEntityTranscoding(Transcoding):
-    type = UserAccountEntity
-    name = "UserAccountEntity"
-
-    def encode(self, o: UserAccountEntity) -> str:
-        return asdict(o)
-
-    def decode(self, d: dict):
-        return UserAccountEntity(**d)
 
 
 class FamilyEntityTranscoding(Transcoding):
