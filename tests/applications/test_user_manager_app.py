@@ -101,7 +101,6 @@ def test_user_manager_app_when_handling_new_child_account_event(
 
     new_child_account_event = UserManagerAppEventFactory.build_new_child_account_event(
         family_id=str(aggregate_id),
-        age=7,
         dob=datetime.datetime(month=12, day=20, year=2014),
         grade=2,
         email='test_email',
