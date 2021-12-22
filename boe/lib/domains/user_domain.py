@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from typing import List, Union
@@ -78,6 +78,18 @@ class FamilyEntity(Entity):
         self.subscription_type = subscription_type
 
 
+class CredentialTypeEnum(Enum):
+    basic = 0
+
+
+@serialize
+@deserialize
+@dataclass
+class Credential:
+    credential_type: CredentialTypeEnum
+    creds: dict
+
+
 @serialize
 @deserialize
 @dataclass
@@ -88,7 +100,8 @@ class UserAccount(Entity):
     last_name: str
     email: str
     dob: datetime
-    grade: int = None
+    grade: int = 0
+    credential: Credential = field(default=Credential(credential_type=CredentialTypeEnum.basic, creds={}))
 
 
 @serialize
@@ -111,14 +124,16 @@ class FamilyUserAggregate(Aggregate):
             if isinstance(user_account, UserAccount):
                 self.members.append(user_account)
             else:
-                raise TypeError(f"Invalid type for user_account, Expected: {UserAccountEntity}")
+                raise TypeError(f"Invalid type for user_account, Expected: {UserAccount}")
         else:
             raise ValueError(f"AccountID={user_account.id} already member")
 
-    def get_member_by_id(self, member_id: UUID):
+    def get_member_by_id(self, member_id: UUID) -> UserAccount:
         for member in self.members:
             if member.id == member_id:
                 return member
+
+        raise ValueError(f"{member_id} not in family members")
 
     @classmethod
     def create(
@@ -190,6 +205,22 @@ class FamilyUserAggregate(Aggregate):
     @event
     def change_subscription_type(self, subscription_type: SubscriptionTypeEnum):
         self.family.subscription_type = subscription_type
+
+    @event
+    def set_basic_credential(self, member_id: UUID, password_hash: bytes):
+
+        user = self.get_member_by_id(member_id=member_id)
+        credential = None
+        if user.account_type.adult:
+            credential = UserDomainFactory.build_basic_credentials(password_hash=password_hash, username=user.email)
+
+        if user.account_type.child:
+            credential = UserDomainFactory.build_basic_credentials(
+                password_hash=password_hash,
+                username=f'{user.first_name}_{user.last_name}'.lower()
+            )
+
+        user.credential = credential
 
 
 class UserDomainWriteModel:
@@ -310,7 +341,7 @@ class UserDomainFactory:
             last_name: str,
             email: str,
             family_id: UUID,
-            grade: int = None
+            grade: int = 0
     ) -> UserAccount:
         return UserAccount(
             account_type=UserAccountTypeEnum(account_type),
@@ -322,4 +353,14 @@ class UserDomainFactory:
             grade=grade,
             id=uuid4()
 
+        )
+
+    @staticmethod
+    def build_basic_credentials(password_hash: bytes, username: str) -> Credential:
+        return Credential(
+            credential_type=CredentialTypeEnum.basic,
+            creds={
+                "password_hash": password_hash,
+                "username": username
+            }
         )

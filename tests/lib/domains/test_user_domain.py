@@ -1,3 +1,4 @@
+from base64 import b64encode
 from datetime import datetime
 from uuid import UUID
 
@@ -10,6 +11,8 @@ from boe.lib.domains.user_domain import (
     UserDomainQueryModel,
     FamilyUserAggregate,
     UserAccount,
+    Credential,
+    CredentialTypeEnum,
     UserAccountTypeEnum
 )
 from boe.utils.serialization_utils import serialize_dataclass_to_dict
@@ -167,6 +170,19 @@ def test_family_user_aggregate_when_serializing(family_user_aggregate):
         dob=datetime(year=1988, month=9, day=6)
     )
     aggregate_dict = serialize_dataclass_to_dict(family_user_aggregate)
-    print(aggregate_dict)
+
     assert aggregate.id == aggregate_dict.get("family")['id']
     assert aggregate.family.subscription_type.value == aggregate_dict.get("family")['subscription_type']
+
+
+def test_family_user_aggregate_when_adding_creds(family_user_aggregate, child_member_account_testable):
+    aggregate: FamilyUserAggregate = family_user_aggregate
+
+    aggregate.add_family_member(user_account=child_member_account_testable)
+    aggregate.set_basic_credential(member_id=child_member_account_testable.id,
+                                   password_hash=b64encode("TEST_PASSWORD".encode()))
+
+    assert aggregate.members[0].credential == Credential(
+        credential_type=CredentialTypeEnum.basic,
+        creds={'password_hash': b'VEVTVF9QQVNTV09SRA==', 'username': 'test_name_test_last'}
+    )
