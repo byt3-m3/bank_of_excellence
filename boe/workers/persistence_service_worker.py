@@ -3,7 +3,7 @@ import os
 from dataclasses import dataclass
 
 import pika.exceptions
-from boe.applications.persistence_domain_app import PersistenceServiceApp, PersistenceDomainAppEventFactory
+from boe.applications.persistence_domain_apps import PersistenceServiceApp, PersistenceDomainAppEventFactory
 from boe.env import (
     AMQP_URL,
     PERSISTENCE_WORKER_QUEUE,
