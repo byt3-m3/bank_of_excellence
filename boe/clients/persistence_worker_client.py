@@ -1,6 +1,6 @@
 import json
 
-from boe.applications.persistence_domain_app import PersistenceDomainAppEventFactory
+from boe.applications.persistence_domain_apps import PersistenceDomainAppEventFactory
 from boe.clients.client import PikaWorkerClient
 from boe.env import PERSISTENCE_WORKER_QUEUE, STAGE
 from boe.lib.domains.bank_domain import BankDomainAggregate
