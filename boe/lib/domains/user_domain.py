@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import List, Union, Dict, Any
+from typing import List, Union
 from uuid import UUID, uuid4
 
 from boe.env import (
@@ -69,39 +69,6 @@ class ChildAccountTableModel:
 @serialize
 @deserialize
 @dataclass
-class UserAccountDetail:
-    first_name: str
-    last_name: str
-    email: str
-
-
-@serialize
-@deserialize
-@dataclass
-class ChildAccountDetail(UserAccountDetail):
-    dob: datetime
-    age: int
-    grade: int
-
-
-@serialize
-@deserialize
-@dataclass
-class AdultAccountDetail(UserAccountDetail):
-    pass
-
-
-@serialize
-@deserialize
-@dataclass
-class UserAccountEntity(Entity):
-    account_type: UserAccountTypeEnum
-    account_detail: Union[ChildAccountDetail, AdultAccountDetail]
-
-
-@serialize
-@deserialize
-@dataclass
 class FamilyEntity(Entity):
     name: str
     description: str
@@ -114,8 +81,14 @@ class FamilyEntity(Entity):
 @serialize
 @deserialize
 @dataclass
-class MemberMapping:
-    data: Any
+class UserAccount(Entity):
+    account_type: UserAccountTypeEnum
+    family_id: UUID
+    first_name: str
+    last_name: str
+    email: str
+    dob: datetime
+    grade: int = None
 
 
 @serialize
@@ -123,16 +96,29 @@ class MemberMapping:
 @dataclass
 class FamilyUserAggregate(Aggregate):
     family: FamilyEntity
-    member_map: Dict[str, UserAccountEntity]
+    members: List[UserAccount]
 
-    def _add_family_member(self, user_account: UserAccountEntity):
-        if str(user_account.id) not in self.member_map:
-            if isinstance(user_account, UserAccountEntity):
-                self.member_map[str(user_account.id)] = user_account
+    def is_member(self, member_id: UUID):
+        for member in self.members:
+            if member_id == member.id:
+                return True
+
+        return False
+
+    def _add_family_member(self, user_account: UserAccount):
+
+        if not self.is_member(member_id=user_account.id):
+            if isinstance(user_account, UserAccount):
+                self.members.append(user_account)
             else:
                 raise TypeError(f"Invalid type for user_account, Expected: {UserAccountEntity}")
         else:
             raise ValueError(f"AccountID={user_account.id} already member")
+
+    def get_member_by_id(self, member_id: UUID):
+        for member in self.members:
+            if member.id == member_id:
+                return member
 
     @classmethod
     def create(
@@ -140,7 +126,7 @@ class FamilyUserAggregate(Aggregate):
             description: str,
             name: str,
             subscription_type: SubscriptionTypeEnum,
-            members: List[UserAccountEntity] = None
+            members: List[UserAccount] = None
     ):
         family_entity = UserDomainFactory.build_family(
             description=description,
@@ -148,24 +134,25 @@ class FamilyUserAggregate(Aggregate):
             subscription_type=subscription_type
 
         )
-        member_map = {}
-        if members is not None:
-            for member in members:
-                member_map[member.id] = member
+        if members is None:
+            members = []
 
         return cls._create(
             cls.Created,
             id=family_entity.id,
             family=family_entity,
-            member_map=member_map
+            members=members
         )
 
     @event
-    def create_new_adult_member(self, email: str, first_name: str, last_name: str):
-        account = UserDomainFactory.build_adult_account(
+    def create_new_adult_member(self, email: str, first_name: str, last_name: str, dob: datetime):
+        account = UserDomainFactory.build_user_account(
             email=email,
             first_name=first_name,
-            last_name=last_name
+            last_name=last_name,
+            account_type=UserAccountTypeEnum.adult,
+            family_id=self.id,
+            dob=dob
         )
         self._add_family_member(user_account=account)
 
@@ -175,27 +162,30 @@ class FamilyUserAggregate(Aggregate):
             email: str,
             first_name: str,
             last_name: str,
-            age: int,
             dob: datetime,
             grade: int
     ):
-        account = UserDomainFactory.build_child_account(
+        account = UserDomainFactory.build_user_account(
             email=email,
             first_name=first_name,
             last_name=last_name,
-            age=age,
             dob=dob,
-            grade=grade
+            grade=grade,
+            account_type=UserAccountTypeEnum.child,
+            family_id=self.family.id
         )
         self._add_family_member(user_account=account)
 
     @event
-    def add_family_member(self, user_account: UserAccountEntity):
+    def add_family_member(self, user_account: UserAccount):
+        if user_account.family_id != self.id:
+            raise ValueError(
+                f"User Account(id={user_account.id} family_id={user_account.family_id}) is not related   Family={self.id}")
         self._add_family_member(user_account=user_account)
 
     @event
     def remove_family_member(self, user_id: UUID):
-        self.member_map.pop(str(user_id))
+        self.members.remove(self.get_member_by_id(member_id=user_id))
 
     @event
     def change_subscription_type(self, subscription_type: SubscriptionTypeEnum):
@@ -299,136 +289,11 @@ class UserDomainFactory:
         )
 
     @staticmethod
-    def build_child_account(
-            age: int,
-            dob: datetime,
-            email: str,
-            first_name: str,
-            last_name: str,
-            grade: int,
-    ) -> UserAccountEntity:
-        return UserAccountEntity(
-            account_detail=UserDomainFactory.build_child_account_detail(
-                age=age,
-                dob=dob,
-                email=email,
-                first_name=first_name,
-                last_name=last_name,
-                grade=grade
-            ),
-            account_type=UserAccountTypeEnum.child,
-            id=uuid4()
-        )
-
-    @staticmethod
-    def rebuild_child_account(
-            _id: UUID,
-            age: int,
-            dob: datetime,
-            email: str,
-            first_name: str,
-            last_name: str,
-            grade: int,
-            **kwargs
-    ) -> UserAccountEntity:
-        return UserAccountEntity(
-            id=_id,
-            account_detail=ChildAccountDetail(
-                email=email,
-                first_name=first_name,
-                last_name=last_name,
-                age=age,
-                dob=dob,
-                grade=grade
-            ),
-            account_type=UserAccountTypeEnum.child
-        )
-
-    @staticmethod
-    def build_adult_account(
-            email: str,
-            first_name: str,
-            last_name: str,
-    ) -> UserAccountEntity:
-        return UserAccountEntity(
-            account_detail=UserDomainFactory.build_adult_account_detail(
-
-                email=email,
-                first_name=first_name,
-                last_name=last_name,
-
-            ),
-            account_type=UserAccountTypeEnum.adult,
-            id=uuid4()
-        )
-
-    @staticmethod
-    def rebuild_adult_account(
-            _id: UUID,
-            email: str,
-            first_name: str,
-            last_name: str,
-            **kwargs
-    ) -> UserAccountEntity:
-        return UserAccountEntity(
-            id=_id,
-            account_detail=AdultAccountDetail(
-                email=email,
-                first_name=first_name,
-                last_name=last_name
-            ),
-            account_type=UserAccountTypeEnum.adult
-        )
-
-    @staticmethod
-    def rebuild_user_account(
-            id,
-            account_type,
-            account_detail,
-            **kwargs
-    ) -> UserAccountEntity:
-        return UserAccountEntity(
-            id=id,
-            account_detail=account_detail,
-            account_type=account_type
-        )
-
-    @staticmethod
-    def build_child_account_detail(
-            age: int,
-            dob: datetime,
-            email: str,
-            first_name: str,
-            last_name: str,
-            grade: int,
-    ) -> ChildAccountDetail:
-        return ChildAccountDetail(
-            age=age,
-            dob=dob,
-            email=email,
-            first_name=first_name,
-            last_name=last_name,
-            grade=grade
-        )
-
-    @staticmethod
-    def build_adult_account_detail(
-            first_name: str,
-            last_name: str,
-            email: str,
-    ) -> AdultAccountDetail:
-        return AdultAccountDetail(
-            first_name=first_name,
-            last_name=last_name,
-            email=email,
-        )
-
-    @staticmethod
     def build_user_family_user_aggregate(
             description: str,
             name: str,
             subscription_type: SubscriptionTypeEnum,
-            members: List[UserAccountEntity] = None
+            members: List[UserAccount] = None
     ):
         return FamilyUserAggregate.create(
             description=description,
@@ -437,44 +302,24 @@ class UserDomainFactory:
             members=members
         )
 
+    @staticmethod
+    def build_user_account(
+            account_type: Union[UserAccountTypeEnum, int],
+            dob: datetime,
+            first_name: str,
+            last_name: str,
+            email: str,
+            family_id: UUID,
+            grade: int = None
+    ) -> UserAccount:
+        return UserAccount(
+            account_type=UserAccountTypeEnum(account_type),
+            dob=dob,
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            family_id=family_id,
+            grade=grade,
+            id=uuid4()
 
-class UserDomainRepository:
-
-    def __init__(self):
-        self.factory: UserDomainFactory = UserDomainFactory()
-        self.query_model: UserDomainQueryModel = UserDomainQueryModel()
-        self.write_model: UserDomainWriteModel = UserDomainWriteModel()
-
-    def save(self, model: Union[UserAccountEntity, FamilyEntity]) -> UUID:
-
-        if isinstance(model, UserAccountEntity):
-            return self.write_model.save_user_account(model)
-
-        if isinstance(model, FamilyEntity):
-            return self.write_model.save_family(family=model)
-
-    def get_user_account(self, account_id: UUID) -> UserAccountEntity:
-        model_dict = self.query_model.get_user_account_by_id(agg_id=account_id)
-
-        return self.factory.rebuild_user_account(
-            **model_dict
         )
-
-    def get_user_accounts(self) -> List[UserAccountEntity]:
-        items = self.query_model.scan_user_accounts()
-        return [
-            self.factory.rebuild_user_account(**item) for item in items
-        ]
-
-    def get_family(self, family_id) -> FamilyEntity:
-        model_dict = self.query_model.get_family_by_id(family_id=family_id)
-
-        return self.factory.rebuild_family(
-            **model_dict
-        )
-
-    def get_families(self):
-        items = self.query_model.scan_families()
-        return [
-            self.factory.rebuild_family(**item) for item in items
-        ]
