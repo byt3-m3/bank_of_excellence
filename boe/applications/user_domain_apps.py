@@ -5,12 +5,10 @@ from uuid import UUID
 
 from boe.applications.transcodings import (
     FamilyEntityTranscoding,
-    UserAccountEntityTranscoding,
+
     SubscriptionTypeEnumTranscoding,
     UserAccountTypeEnumTranscoding,
-    ChildAccountDetailTranscoding,
-    AdultAccountDetailTranscoding,
-    UserAccountDetailTranscoding
+
 )
 from boe.clients.notification_worker_client import NotificationWorkerClient
 from boe.lib.common_models import AppEvent, AppNotification
@@ -23,10 +21,13 @@ from boe.lib.domains.user_domain import (
 from cbaxter1988_utils.log_utils import get_logger
 from eventsourcing.application import Application
 from eventsourcing.persistence import Transcoder
+from serde import deserialize, serialize
 
 logger = get_logger("UserManagerApp")
 
 
+@serialize
+@deserialize
 @dataclass(frozen=True)
 class NewFamilyEvent(AppEvent):
     description: str
@@ -34,29 +35,36 @@ class NewFamilyEvent(AppEvent):
     subscription_type: SubscriptionTypeEnum
 
 
+@serialize
+@deserialize
 @dataclass(frozen=True)
 class NewChildAccountEvent(AppEvent):
     family_id: UUID
     first_name: str
     last_name: str
-    age: int
     dob: datetime
     grade: int
     email: str
 
 
+@serialize
+@deserialize
 @dataclass(frozen=True)
 class FamilySubscriptionChangeEvent(AppEvent):
     family_id: UUID
     subscription_type: SubscriptionTypeEnum
 
 
+@serialize
+@deserialize
 @dataclass(frozen=True)
 class ChildCreatedNotification(AppNotification):
     family_id: str
     child_id: str
 
 
+@serialize
+@deserialize
 @dataclass(frozen=True)
 class FamilyCreatedNotification(AppNotification):
     aggregate_id: str
@@ -79,7 +87,6 @@ class UserManagerAppEventFactory:
     @staticmethod
     def build_new_child_account_event(
             family_id: str,
-            age: int,
             dob: datetime,
             last_name: str,
             first_name: str,
@@ -88,7 +95,6 @@ class UserManagerAppEventFactory:
     ):
         return NewChildAccountEvent(
             family_id=UUID(family_id),
-            age=age,
             dob=dob,
             last_name=last_name,
             first_name=first_name,
@@ -133,12 +139,8 @@ class UserManagerApp(Application):
     def register_transcodings(self, transcoder: Transcoder):
         super().register_transcodings(transcoder)
         transcoder.register(FamilyEntityTranscoding())
-        transcoder.register(UserAccountEntityTranscoding())
         transcoder.register(SubscriptionTypeEnumTranscoding())
         transcoder.register(UserAccountTypeEnumTranscoding())
-        transcoder.register(ChildAccountDetailTranscoding())
-        transcoder.register(AdultAccountDetailTranscoding())
-        transcoder.register(UserAccountDetailTranscoding())
 
     def _get_family_aggregate(self, family_id: UUID) -> FamilyUserAggregate:
         return self.repository.get(aggregate_id=family_id)
@@ -174,17 +176,15 @@ class UserManagerApp(Application):
 
     def handle_new_child_account_event(self, event: NewChildAccountEvent) -> UUID:
         aggregate: FamilyUserAggregate = self.repository.get(aggregate_id=event.family_id)
-        child_account = self.factory.build_child_account(
-            age=event.age,
+
+        aggregate.create_new_child_member(
             dob=event.dob,
             email=event.email,
             first_name=event.first_name,
             last_name=event.last_name,
-            grade=event.grade
+            grade=event.grade,
         )
-
-        aggregate.add_family_member(user_account=child_account)
-
+        child_account = aggregate.members[len(aggregate.members) - 1]
         self._save_aggregate(aggregate=aggregate)
         self.notification_service_client.publish_event(
             event=UserManagerAppEventFactory.build_child_created_notification(
