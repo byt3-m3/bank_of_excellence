@@ -1,7 +1,10 @@
+import datetime
+from uuid import UUID
 from uuid import uuid4
 
 from boe.clients.bank_manager_worker_client import BankManagerWorkerClient
 from boe.clients.persistence_worker_client import PersistenceWorkerClient
+from boe.clients.user_manager_worker_client import UserManagerWorkerClient, SubscriptionTypeEnum
 from boe.env import AMQP_URL, STORE_MANAGER_WORKER_QUEUE
 from boe.lib.domains.bank_domain import BankDomainFactory, BankTransactionMethodEnum
 from boe.utils.serialization_utils import serialize_dataclass_to_dict
@@ -64,8 +67,43 @@ def publish_save_aggregate_event():
     )
 
 
-if __name__ == "__main__":
-    account_id = publish_establish_new_account_event()
-    publish_new_transaction_event(account_id=account_id)
+def publish_new_family_event():
+    client = UserManagerWorkerClient()
 
-    publish_new_store_event()
+    client.publish_new_family_event(
+        name="TEST",
+        description="TEST",
+        subscription_type=SubscriptionTypeEnum.premium
+    )
+
+
+def publish_new_child_account_event():
+    client = UserManagerWorkerClient()
+
+    client.publish_new_child_event(
+        first_name='test',
+        last_name='test',
+        dob=datetime.datetime(year=2014, day=1, month=5),
+        email='test_email',
+        family_id=UUID("0371f817-909d-42a6-8161-275dab445ad7"),
+        grade=2
+    )
+
+
+def publish_family_subscription_change_event():
+    client = UserManagerWorkerClient()
+
+    client.publish_subscription_change_event(
+
+        family_id=UUID("0371f817-909d-42a6-8161-275dab445ad7"),
+        subscription_type=SubscriptionTypeEnum.premium
+    )
+
+
+if __name__ == "__main__":
+    # account_id = publish_establish_new_account_event()
+    # publish_new_transaction_event(account_id=account_id)
+
+    publish_new_family_event()
+    # publish_new_child_account_event()
+    # publish_family_subscription_change_event()
