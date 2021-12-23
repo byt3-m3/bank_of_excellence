@@ -84,8 +84,8 @@ def publish_new_child_account_event():
         first_name='test',
         last_name='test',
         dob=datetime.datetime(year=2014, day=1, month=5),
-        email='test_email',
-        family_id=UUID("0371f817-909d-42a6-8161-275dab445ad7"),
+        email='test@email.com',
+        family_id=UUID("0371f817909d42a68161275dab445ad7"),
         grade=2
     )
 
@@ -100,10 +100,22 @@ def publish_family_subscription_change_event():
     )
 
 
+def publish_create_cognito_user_event():
+    client = UserManagerWorkerClient()
+
+    client.publish_create_cognito_user_event(
+        username="cbaxter",
+        email="cbaxtertech@gmail.com",
+        is_real=False
+
+    )
+
+
 if __name__ == "__main__":
     # account_id = publish_establish_new_account_event()
     # publish_new_transaction_event(account_id=account_id)
 
-    publish_new_family_event()
-    # publish_new_child_account_event()
+    # publish_new_family_event()
+    publish_new_child_account_event()
     # publish_family_subscription_change_event()
+    # publish_create_cognito_user_event()
