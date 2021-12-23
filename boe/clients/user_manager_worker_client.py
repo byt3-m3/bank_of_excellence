@@ -63,3 +63,12 @@ class UserManagerWorkerClient(PikaWorkerClient):
         )
 
         self.publish_event(event=event)
+
+    def publish_create_cognito_user_event(self, email: str, username: str, is_real: bool):
+        event = self.event_factory.build_create_cognito_user_event(
+            email=email,
+            username=username,
+            is_real=is_real
+        )
+
+        self.publish_event(event=event)
