@@ -110,7 +110,6 @@ def test_family_user_aggregate_when_adding_child_member(family_user_aggregate, c
 
 def test_family_user_aggregate_when_adding_member_duplicate(family_user_aggregate, child_member_account_testable):
     aggregate: FamilyUserAggregate = family_user_aggregate
-    print(child_member_account_testable.id)
     aggregate.add_family_member(user_account=child_member_account_testable)
     with pytest.raises(ValueError):
         aggregate.add_family_member(user_account=child_member_account_testable)
@@ -156,8 +155,10 @@ def test_family_user_aggregate_when_creating_new_child_member(family_user_aggreg
         dob=datetime(year=2014, month=12, day=20),
         grade=5
     )
-
+    # print(aggregate.members[0].credential.creds.username)
     assert len(aggregate.members) == 1
+
+    assert aggregate.members[0].credential.creds.username == ''
 
 
 def test_family_user_aggregate_when_serializing(family_user_aggregate):
