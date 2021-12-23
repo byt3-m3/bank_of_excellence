@@ -19,6 +19,9 @@ boe/clients/client.py
 boe/clients/notification_worker_client.py
 boe/clients/persistence_worker_client.py
 boe/clients/user_manager_worker_client.py
+boe/frontend/__init__.py
+boe/frontend/login.py
+boe/frontend/sign_up.py
 boe/lib/__init__.py
 boe/lib/common_models.py
 boe/lib/domains/__init__.py
