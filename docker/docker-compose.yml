@@ -48,5 +48,7 @@ services:
       - AMQP_PORT=5672
       - USER_MANAGER_WORKER_EVENT_STORE=event_store.sqllite
       - STAGE=BETA
+    env_file:
+      - .env
 
     command: python3 -m boe.workers.user_manager_worker
