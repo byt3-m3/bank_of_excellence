@@ -22,7 +22,7 @@ from cbaxter1988_utils.pymongo_utils import (
 )
 from eventsourcing.domain import Aggregate, event
 from pymongo.errors import DuplicateKeyError
-
+from boe.utils.serialization_utils import serialize_object_to_dict
 
 class UserAccountTypeEnum(Enum):
     adult = 0
@@ -252,7 +252,7 @@ class UserDomainWriteModel:
         self.db = get_database(client=self.client, db_name=APP_DB)
 
     def save_family_user_aggregate(self, aggregate: FamilyUserAggregate):
-        serialized_aggregate = serialize_dataclass_to_dict(aggregate)
+        serialized_aggregate = serialize_object_to_dict(aggregate)
 
         family_collection = get_collection(database=self.db, collection=FAMILY_TABLE)
 
