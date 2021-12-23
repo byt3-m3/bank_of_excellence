@@ -43,6 +43,7 @@ class NewFamilyEvent(AppEvent):
     last_name: str
     dob: datetime
     email: str
+    id: UUID = None
 
 
 @dataclass(frozen=True)
@@ -99,6 +100,7 @@ class UserManagerAppEventFactory:
             email: str,
             dob: str,
             subscription_type: Union[SubscriptionTypeEnum, int] = SubscriptionTypeEnum.basic,
+            **kwargs
 
     ):
         return NewFamilyEvent(
@@ -108,7 +110,8 @@ class UserManagerAppEventFactory:
             first_name=first_name,
             last_name=last_name,
             email=email,
-            dob=datetime.fromisoformat(dob)
+            dob=datetime.fromisoformat(dob),
+            id=UUID(kwargs.get("id"))
         )
 
     @staticmethod
@@ -223,17 +226,18 @@ class UserManagerApp(Application):
         return aggregate.member_map.get(account_id)
 
     def handle_new_family_event(self, event: NewFamilyEvent) -> UUID:
-        family = self.factory.build_user_family_user_aggregate(
+        aggregate = self.factory.build_user_family_user_aggregate(
             description=event.description,
             name=event.name,
-            subscription_type=event.subscription_type
+            subscription_type=event.subscription_type,
+            id=str(event.id)
         )
 
-        self._save_aggregate(aggregate=family)
+        self._save_aggregate(aggregate=aggregate)
 
         self.user_manager_pika_client.publish_event(
             event=UserManagerAppEventFactory.build_new_adult_account_event(
-                family_id=str(family.id),
+                family_id=str(aggregate.id),
                 last_name=event.last_name,
                 first_name=event.first_name,
                 email=event.email,
@@ -243,12 +247,12 @@ class UserManagerApp(Application):
 
         self.store_manager_pika_client.publish_event(
             event=StoreManagerAppEventFactory.build_new_store_event(
-                family_id=str(family.id),
+                family_id=str(aggregate.id),
 
             )
         )
 
-        return family.id
+        return aggregate.id
 
     def handle_new_child_account_event(self, event: NewChildAccountEvent) -> UUID:
         aggregate: FamilyUserAggregate = self.repository.get(aggregate_id=event.family_id)

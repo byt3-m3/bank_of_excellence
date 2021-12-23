@@ -11,6 +11,7 @@ from boe.env import (
     FAMILY_TABLE
 )
 from boe.lib.common_models import Entity
+from boe.utils.serialization_utils import serialize_object_to_dict
 from cbaxter1988_utils.pymongo_utils import (
     get_client,
     get_database,
@@ -22,7 +23,7 @@ from cbaxter1988_utils.pymongo_utils import (
 )
 from eventsourcing.domain import Aggregate, event
 from pymongo.errors import DuplicateKeyError
-from boe.utils.serialization_utils import serialize_object_to_dict
+
 
 class UserAccountTypeEnum(Enum):
     adult = 0
@@ -154,7 +155,8 @@ class FamilyUserAggregate(Aggregate):
             description: str,
             name: str,
             subscription_type: SubscriptionTypeEnum,
-            members: List[UserAccount] = None
+            members: List[UserAccount] = None,
+            **kwargs
     ):
         family_entity = UserDomainFactory.build_family(
             description=description,
@@ -162,6 +164,10 @@ class FamilyUserAggregate(Aggregate):
             subscription_type=subscription_type
 
         )
+
+        if kwargs.get("id"):
+            family_entity.id = kwargs.get("id")
+
         if members is None:
             members = []
 
@@ -343,13 +349,15 @@ class UserDomainFactory:
             description: str,
             name: str,
             subscription_type: SubscriptionTypeEnum,
-            members: List[UserAccount] = None
+            members: List[UserAccount] = None,
+            id: str = None
     ):
         return FamilyUserAggregate.create(
             description=description,
             name=name,
             subscription_type=subscription_type,
-            members=members
+            members=members,
+            id=UUID(id)
         )
 
     @staticmethod

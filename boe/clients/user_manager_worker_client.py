@@ -26,7 +26,8 @@ class UserManagerWorkerClient(PikaWorkerClient):
             first_name: str,
             last_name: str,
             dob: datetime,
-            email: str
+            email: str,
+            id: str
     ):
         event = self.event_factory.build_new_family_event(
             description=description,
@@ -34,10 +35,11 @@ class UserManagerWorkerClient(PikaWorkerClient):
             name=name,
             first_name=first_name,
             last_name=last_name,
-            dob=dob.isoformat(),
-            email=email
+            dob=dob.isoformat() if isinstance(dob, datetime.datetime) else dob,
+            email=email,
+            id=id
         )
-        self.publish_event(event=event)
+        return self.publish_event(event=event)
 
     def publish_new_child_event(
             self,
