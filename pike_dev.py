@@ -59,7 +59,8 @@ def publish_new_family_event():
         first_name='Courtney',
         last_name='Baxter',
         dob=datetime.datetime(month=9, day=6, year=1988),
-        email='cbaxtertech@gmail.com'
+        email='cbaxtertech@gmail.com',
+        id=str(uuid4())
     )
 
 
