@@ -5,6 +5,7 @@ from uuid import uuid4
 from boe.clients.user_manager_worker_client import UserManagerWorkerClient
 from cbaxter1988_utils.flask_utils import build_json_response
 from cbaxter1988_utils.log_utils import get_logger
+from boe.utils.validation_utils import is_isodate_format_string
 from flask import Flask, request
 
 logger = get_logger("BOE_API")
@@ -21,7 +22,13 @@ def new_family():
     dob = event_payload.get("dob")
 
     try:
-        _ = datetime.datetime.fromisoformat(dob)
+        if not is_isodate_format_string(dob):
+            return build_json_response(
+                status=http.HTTPStatus.EXPECTATION_FAILED,
+                payload={
+                    "msg": "Invalid ISO format"
+                }
+            )
         family_id = str(uuid4())
 
         user_manager_worker_client.publish_new_family_event(**event_payload, id=family_id)
