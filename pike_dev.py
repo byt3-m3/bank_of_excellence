@@ -115,7 +115,7 @@ if __name__ == "__main__":
     # account_id = publish_establish_new_account_event()
     # publish_new_transaction_event(account_id=account_id)
 
-    # publish_new_family_event()
-    publish_new_child_account_event()
+    publish_new_family_event()
+    # publish_new_child_account_event()
     # publish_family_subscription_change_event()
     # publish_create_cognito_user_event()

@@ -27,7 +27,11 @@ class UserManagerWorkerClient(PikaWorkerClient):
         event = self.event_factory.build_new_family_event(
             description=description,
             subscription_type=SubscriptionTypeEnum(subscription_type),
-            name=name
+            name=name,
+            first_name='Courtney',
+            last_name='Baxter',
+            dob=datetime.datetime(month=9, day=6, year=1988).isoformat(),
+            email='cbaxtertech@gmail.com'
         )
         self.publish_event(event=event)
 
@@ -69,6 +73,24 @@ class UserManagerWorkerClient(PikaWorkerClient):
             email=email,
             username=username,
             is_real=is_real
+        )
+
+        self.publish_event(event=event)
+
+    def publish_new_adult_account_event(
+            self,
+            first_name: str,
+            last_name: str,
+            email: str,
+            dob: datetime.datetime,
+            family_id: UUID
+    ):
+        event = self.event_factory.build_new_adult_account_event(
+            email=email,
+            family_id=str(family_id),
+            first_name=first_name,
+            last_name=last_name,
+            dob=dob
         )
 
         self.publish_event(event=event)

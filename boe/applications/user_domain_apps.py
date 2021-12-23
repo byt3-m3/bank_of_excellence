@@ -40,6 +40,10 @@ class NewFamilyEvent(AppEvent):
     description: str
     name: str
     subscription_type: SubscriptionTypeEnum
+    first_name: str
+    last_name: str
+    dob: datetime
+    email: str
 
 
 @serialize
@@ -51,6 +55,17 @@ class NewChildAccountEvent(AppEvent):
     last_name: str
     dob: datetime
     grade: int
+    email: str
+
+
+@serialize
+@deserialize
+@dataclass(frozen=True)
+class NewAdultAccountEvent(AppEvent):
+    family_id: UUID
+    first_name: str
+    last_name: str
+    dob: datetime
     email: str
 
 
@@ -92,12 +107,21 @@ class UserManagerAppEventFactory:
     def build_new_family_event(
             description: str,
             name: str,
-            subscription_type: Union[SubscriptionTypeEnum, int] = SubscriptionTypeEnum.basic
+            first_name: str,
+            last_name: str,
+            email: str,
+            dob: str,
+            subscription_type: Union[SubscriptionTypeEnum, int] = SubscriptionTypeEnum.basic,
+
     ):
         return NewFamilyEvent(
             description=description,
             name=name,
             subscription_type=SubscriptionTypeEnum(subscription_type),
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            dob=datetime.fromisoformat(dob)
         )
 
     @staticmethod
@@ -116,6 +140,22 @@ class UserManagerAppEventFactory:
             first_name=first_name,
             email=email,
             grade=grade,
+        )
+
+    @staticmethod
+    def build_new_adult_account_event(
+            family_id: str,
+            dob: datetime,
+            last_name: str,
+            first_name: str,
+            email: str,
+    ):
+        return NewAdultAccountEvent(
+            family_id=UUID(family_id),
+            dob=dob if isinstance(dob, datetime) else datetime.fromisoformat(dob),
+            last_name=last_name,
+            first_name=first_name,
+            email=email,
         )
 
     @staticmethod
@@ -196,10 +236,14 @@ class UserManagerApp(Application):
         )
 
         self._save_aggregate(aggregate=family)
-
-        self.notification_service_client.publish_event(
-            event=UserManagerAppEventFactory.build_family_created_notification(
-                aggregate_id=str(family.id)
+        print(self.pika_client)
+        self.pika_client.publish_event(
+            event=UserManagerAppEventFactory.build_new_adult_account_event(
+                family_id=str(family.id),
+                last_name=event.last_name,
+                first_name=event.first_name,
+                email=event.email,
+                dob=event.dob
             )
         )
         return family.id
@@ -230,6 +274,28 @@ class UserManagerApp(Application):
                 child_id=str(child_account.id),
                 family_id=str(aggregate.id),
 
+            )
+        )
+
+        return aggregate.id
+
+    def handle_new_adult_account_event(self, event: NewAdultAccountEvent) -> UUID:
+        aggregate: FamilyUserAggregate = self.repository.get(aggregate_id=event.family_id)
+
+        aggregate.create_new_adult_member(
+            dob=event.dob,
+            email=event.email,
+            first_name=event.first_name,
+            last_name=event.last_name,
+        )
+
+        self._save_aggregate(aggregate=aggregate)
+
+        self.pika_client.publish_event(
+            event=CreateCognitoUserEvent(
+                email=event.email,
+                username=f'{event.first_name}_{event.last_name}'.lower(),
+                is_real=False if STAGE in ['LOCAL', 'BETA'] else True
             )
         )
 

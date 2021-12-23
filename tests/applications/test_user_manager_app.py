@@ -71,7 +71,12 @@ def new_family_app_event_basic():
     return UserManagerAppEventFactory.build_new_family_event(
         description='TEST_DESCRIPTION',
         name='TEST_NAME',
-        subscription_type=SubscriptionTypeEnum.basic
+        subscription_type=SubscriptionTypeEnum.basic,
+        first_name='test_firstname',
+        last_name='test_lastname',
+        email='test_lastname',
+        dob=datetime.datetime(month=9, day=6, year=1988).isoformat()
+
     )
 
 
@@ -86,7 +91,7 @@ def new_family_app_event_premium():
 
 def test_user_manager_app_when_handling_new_family_app_event(
         notification_worker_client_mock,
-
+        pika_client_mock,
         write_model_mock,
         user_manager_app_testable,
         new_family_app_event_basic
@@ -99,10 +104,10 @@ def test_user_manager_app_when_handling_new_family_app_event(
 
     write_model_mock.assert_called()
     notification_worker_client_mock.assert_called()
+    pika_client_mock.assert_called()
 
 
 def test_user_manager_app_when_handling_new_child_account_event(
-
         pika_client_mock,
         notification_worker_client_mock,
         write_model_mock,
@@ -131,6 +136,7 @@ def test_user_manager_app_when_handling_new_child_account_event(
 
 def test_user_manager_app_when_handling_family_subscription_change_event(
         notification_worker_client_mock,
+        pika_client_mock,
         write_model_mock,
         user_manager_app_testable,
         new_family_app_event_basic
@@ -149,3 +155,4 @@ def test_user_manager_app_when_handling_family_subscription_change_event(
 
     write_model_mock.assert_called()
     notification_worker_client_mock.assert_called()
+    pika_client_mock.assert_called()

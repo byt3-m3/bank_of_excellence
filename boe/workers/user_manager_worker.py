@@ -45,6 +45,10 @@ event_handler_map = {
     "CreateCognitoUserEvent": {
         "handler": app.handle_create_cognito_user_event,
         "event_factory": app_event_factory.build_create_cognito_user_event
+    },
+    "NewAdultAccountEvent": {
+        "handler": app.handle_new_adult_account_event,
+        "event_factory": app_event_factory.build_new_adult_account_event
     }
 }
 
@@ -53,7 +57,7 @@ def on_message_callback(ch: BlockingChannel, method: Basic.Deliver, properties: 
     cognito_client = get_cognito_idp_client()
     event = json.loads(body)
     logger.info(f'Received msg: {body}')
-
+    print(event)
     for event_name, payload in event.items():
         handler = event_handler_map.get(event_name)['handler']
         event_factory = event_handler_map.get(event_name)['event_factory']
