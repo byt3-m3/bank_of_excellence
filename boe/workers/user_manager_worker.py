@@ -11,10 +11,11 @@ from boe.env import (
     USER_MANAGER_WORKER_EVENT_STORE
 
 )
+from cbaxter1988_utils.aws_cognito_utils import get_cognito_idp_client
 from cbaxter1988_utils.log_utils import get_logger
 from cbaxter1988_utils.pika_utils import PikaQueueServiceWrapper, make_basic_pika_consumer
 from pika.adapters.blocking_connection import BlockingChannel
-from pika.exceptions import ChannelClosedByBroker, StreamLostError
+from pika.exceptions import ChannelClosedByBroker, StreamLostError, AMQPHeartbeatTimeout
 from pika.spec import Basic, BasicProperties
 
 INFRASTRUCTURE_FACTORY = "eventsourcing.sqlite:Factory"
@@ -23,7 +24,7 @@ SQLITE_DBNAME = USER_MANAGER_WORKER_EVENT_STORE
 os.environ['INFRASTRUCTURE_FACTORY'] = INFRASTRUCTURE_FACTORY
 os.environ['SQLITE_DBNAME'] = SQLITE_DBNAME
 
-logger = get_logger()
+logger = get_logger('UserManagerWorker')
 
 app = UserManagerApp()
 app_event_factory = UserManagerAppEventFactory()
@@ -40,11 +41,16 @@ event_handler_map = {
     "FamilySubscriptionChangeEvent": {
         "handler": app.handle_family_subscription_type_change_event,
         "event_factory": app_event_factory.build_family_subscription_change_event
+    },
+    "CreateCognitoUserEvent": {
+        "handler": app.handle_create_cognito_user_event,
+        "event_factory": app_event_factory.build_create_cognito_user_event
     }
 }
 
 
 def on_message_callback(ch: BlockingChannel, method: Basic.Deliver, properties: BasicProperties, body):
+    cognito_client = get_cognito_idp_client()
     event = json.loads(body)
     logger.info(f'Received msg: {body}')
 
@@ -56,9 +62,20 @@ def on_message_callback(ch: BlockingChannel, method: Basic.Deliver, properties: 
             handler(event=_event)
             logger.info(f'Processed ApplicationEvent={_event}')
             ch.basic_ack(delivery_tag=method.delivery_tag)
+
+        except (
+                cognito_client.exceptions.UsernameExistsException,
+                cognito_client.exceptions.LimitExceededException
+        ) as err:
+            logger.error(f'DLQ: Sending Event="{event}" -- Exception={err}')
+            ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
+
+
+
         except Exception as error:
+            ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
             logger.error(f'Unknown Error Encountered: {error}')
-            ch.basic_nack(delivery_tag=method.delivery_tag)
+
             raise
 
 
@@ -84,7 +101,7 @@ def main():
     try:
 
         consumer.run()
-    except (ChannelClosedByBroker, StreamLostError):
+    except (ChannelClosedByBroker, StreamLostError, AMQPHeartbeatTimeout):
         consumer.run()
 
 
