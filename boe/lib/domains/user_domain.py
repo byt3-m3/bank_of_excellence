@@ -11,7 +11,6 @@ from boe.env import (
     FAMILY_TABLE
 )
 from boe.lib.common_models import Entity
-from boe.utils.serialization_utils import serialize_dataclass_to_dict
 from cbaxter1988_utils.pymongo_utils import (
     get_client,
     get_database,
@@ -23,7 +22,6 @@ from cbaxter1988_utils.pymongo_utils import (
 )
 from eventsourcing.domain import Aggregate, event
 from pymongo.errors import DuplicateKeyError
-from serde import deserialize, serialize
 
 
 class UserAccountTypeEnum(Enum):
@@ -66,8 +64,6 @@ class ChildAccountTableModel:
     family_id: UUID
 
 
-@serialize
-@deserialize
 @dataclass
 class FamilyEntity(Entity):
     name: str
@@ -82,8 +78,6 @@ class CredentialTypeEnum(Enum):
     basic = 0
 
 
-@serialize
-@deserialize
 @dataclass
 class Creds:
 
@@ -91,8 +85,6 @@ class Creds:
         pass
 
 
-@serialize
-@deserialize
 @dataclass
 class BasicCreds(Creds):
     username: str
@@ -106,16 +98,12 @@ class BasicCreds(Creds):
         self.password_hash = password_hash
 
 
-@serialize
-@deserialize
 @dataclass
 class Credential:
     credential_type: CredentialTypeEnum
     creds: Union[Creds, BasicCreds]
 
 
-@serialize
-@deserialize
 @dataclass
 class UserAccount(Entity):
     account_type: UserAccountTypeEnum
@@ -131,8 +119,6 @@ class UserAccount(Entity):
     )))
 
 
-@serialize
-@deserialize
 @dataclass
 class FamilyUserAggregate(Aggregate):
     family: FamilyEntity

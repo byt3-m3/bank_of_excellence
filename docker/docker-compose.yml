@@ -1,17 +1,6 @@
 version: '3.1'
 
 services:
-  persistence_service_worker:
-    image: cbaxter1988/boe_core
-    environment:
-      - AMQP_USER=guest
-      - AMQP_PW=guest
-      - AMQP_HOST=192.168.1.5
-      - AMQP_PORT=5672
-      - PERSISTENCE_SERVICE_WORKER_EVENT_STORE=event_store.sqllite
-      - STAGE=BETA
-
-    command: python3 -m boe.workers.persistence_service_worker
 
   bank_manager_worker:
     image: cbaxter1988/boe_core

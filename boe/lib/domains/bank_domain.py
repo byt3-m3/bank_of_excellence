@@ -6,7 +6,7 @@ from uuid import UUID, uuid4
 
 from boe.env import MONGO_HOST, MONGO_PORT, APP_DB, BANK_ACCOUNT_TABLE
 from boe.lib.common_models import Entity
-from boe.utils.serialization_utils import serialize_dataclass_to_dict
+from boe.utils.serialization_utils import serialize_object_to_dict
 from cbaxter1988_utils.pymongo_utils import (
     get_client,
     get_collection,
@@ -17,7 +17,6 @@ from cbaxter1988_utils.pymongo_utils import (
 )
 from eventsourcing.domain import Aggregate, event
 from pymongo.errors import DuplicateKeyError
-from serde import serialize, deserialize
 
 
 class BankAccountStateEnum(Enum):
@@ -41,8 +40,6 @@ class BankAccountTableModel:
     version: int
 
 
-@serialize
-@deserialize
 @dataclass
 class BankTransactionEntity(Entity):
     account_id: UUID
@@ -52,8 +49,6 @@ class BankTransactionEntity(Entity):
     method: BankTransactionMethodEnum = field(default_factory=BankTransactionMethodEnum)
 
 
-@serialize
-@deserialize
 @dataclass(frozen=True)
 class BankTransactionValueObject:
     account_id: UUID
@@ -63,8 +58,6 @@ class BankTransactionValueObject:
     method: BankTransactionMethodEnum = field(default_factory=BankTransactionMethodEnum)
 
 
-@serialize
-@deserialize
 @dataclass
 class BankAccountEntity(Entity):
     owner_id: UUID
@@ -73,8 +66,6 @@ class BankAccountEntity(Entity):
     balance: float = field(default=0)
 
 
-@serialize
-@deserialize
 @dataclass
 class BankDomainAggregate(Aggregate):
     bank_account: BankAccountEntity
@@ -273,7 +264,8 @@ class BankDomainWriteModel:
     def save_bank_aggregate(self, aggregate: BankDomainAggregate) -> UUID:
         collection = get_collection(database=self.db, collection=BANK_ACCOUNT_TABLE)
 
-        item_data = serialize_dataclass_to_dict(model=aggregate)
+        item_data = serialize_object_to_dict(o=aggregate)
+
         item_data['id'] = aggregate.id
         try:
 

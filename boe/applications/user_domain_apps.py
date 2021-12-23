@@ -28,13 +28,10 @@ from cbaxter1988_utils.aws_cognito_utils import add_new_user_basic
 from cbaxter1988_utils.log_utils import get_logger
 from eventsourcing.application import Application
 from eventsourcing.persistence import Transcoder
-from serde import deserialize, serialize
 
 logger = get_logger("UserManagerApp")
 
 
-@serialize
-@deserialize
 @dataclass(frozen=True)
 class NewFamilyEvent(AppEvent):
     description: str
@@ -46,8 +43,6 @@ class NewFamilyEvent(AppEvent):
     email: str
 
 
-@serialize
-@deserialize
 @dataclass(frozen=True)
 class NewChildAccountEvent(AppEvent):
     family_id: UUID
@@ -58,8 +53,6 @@ class NewChildAccountEvent(AppEvent):
     email: str
 
 
-@serialize
-@deserialize
 @dataclass(frozen=True)
 class NewAdultAccountEvent(AppEvent):
     family_id: UUID
@@ -69,16 +62,12 @@ class NewAdultAccountEvent(AppEvent):
     email: str
 
 
-@serialize
-@deserialize
 @dataclass(frozen=True)
 class FamilySubscriptionChangeEvent(AppEvent):
     family_id: UUID
     subscription_type: SubscriptionTypeEnum
 
 
-@serialize
-@deserialize
 @dataclass(frozen=True)
 class CreateCognitoUserEvent(AppEvent):
     username: str
@@ -86,16 +75,12 @@ class CreateCognitoUserEvent(AppEvent):
     is_real: bool = False
 
 
-@serialize
-@deserialize
 @dataclass(frozen=True)
 class ChildCreatedNotification(AppNotification):
     family_id: str
     child_id: str
 
 
-@serialize
-@deserialize
 @dataclass(frozen=True)
 class FamilyCreatedNotification(AppNotification):
     aggregate_id: str
@@ -236,7 +221,7 @@ class UserManagerApp(Application):
         )
 
         self._save_aggregate(aggregate=family)
-        print(self.pika_client)
+
         self.pika_client.publish_event(
             event=UserManagerAppEventFactory.build_new_adult_account_event(
                 family_id=str(family.id),

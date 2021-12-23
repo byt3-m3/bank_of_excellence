@@ -1,20 +1,11 @@
-from dataclasses import is_dataclass
-from typing import Union
+import json
 
-from boe.lib.common_models import Entity, AppEvent
-from eventsourcing.domain import Aggregate
-from serde.json import to_json, to_dict
+from cbaxter1988_utils.serialization_utils import serialize_object as _serialize_object
 
 
-def serialize_dataclass_to_json(model: Union[Entity, Aggregate, AppEvent], convert_id: bool = False):
-    if is_dataclass(model):
-        return to_json(model)
-    else:
-        raise ValueError(f'Invalid Type, Must be an instance of dataclasses.dataclass')
+def serialize_object(o: object, b64_encode: bool = False):
+    return _serialize_object(o=o, b64_encode=b64_encode)
 
 
-def serialize_dataclass_to_dict(model: Union[Entity, Aggregate, AppEvent], convert_id: bool = False):
-    if is_dataclass(model):
-        return to_dict(model)
-    else:
-        raise ValueError(f'Invalid Type, Must be an instance of dataclasses.dataclass')
+def serialize_object_to_dict(o: object, b64_encode: bool = False):
+    return json.loads(_serialize_object(o=o, b64_encode=b64_encode))

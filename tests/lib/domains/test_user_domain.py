@@ -15,7 +15,7 @@ from boe.lib.domains.user_domain import (
     CredentialTypeEnum,
     UserAccountTypeEnum
 )
-from boe.utils.serialization_utils import serialize_dataclass_to_dict
+from boe.utils.serialization_utils import serialize_object_to_dict
 from pytest import fixture
 
 
@@ -170,9 +170,9 @@ def test_family_user_aggregate_when_serializing(family_user_aggregate):
         email='TEST@EMAIL.COM',
         dob=datetime(year=1988, month=9, day=6)
     )
-    aggregate_dict = serialize_dataclass_to_dict(family_user_aggregate)
+    aggregate_dict = serialize_object_to_dict(family_user_aggregate)
 
-    assert aggregate.id == aggregate_dict.get("family")['id']
+    assert aggregate.id == UUID(aggregate_dict.get("family")['id'])
     assert aggregate.family.subscription_type.value == aggregate_dict.get("family")['subscription_type']
 
 

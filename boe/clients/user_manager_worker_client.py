@@ -22,16 +22,20 @@ class UserManagerWorkerClient(PikaWorkerClient):
             self,
             name: str,
             description: str,
-            subscription_type: Union[SubscriptionTypeEnum, int]
+            subscription_type: Union[SubscriptionTypeEnum, int],
+            first_name: str,
+            last_name: str,
+            dob: datetime,
+            email: str
     ):
         event = self.event_factory.build_new_family_event(
             description=description,
             subscription_type=SubscriptionTypeEnum(subscription_type),
             name=name,
-            first_name='Courtney',
-            last_name='Baxter',
-            dob=datetime.datetime(month=9, day=6, year=1988).isoformat(),
-            email='cbaxtertech@gmail.com'
+            first_name=first_name,
+            last_name=last_name,
+            dob=dob.isoformat(),
+            email=email
         )
         self.publish_event(event=event)
 

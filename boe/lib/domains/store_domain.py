@@ -4,7 +4,7 @@ from uuid import UUID, uuid4
 
 from boe.env import MONGO_HOST, MONGO_PORT, APP_DB, STORE_TABLE
 from boe.lib.common_models import Entity
-from boe.utils.serialization_utils import serialize_dataclass_to_dict
+from boe.utils.serialization_utils import serialize_object_to_dict
 from cbaxter1988_utils.pymongo_utils import (
     add_item,
     update_item,
@@ -14,7 +14,6 @@ from cbaxter1988_utils.pymongo_utils import (
 )
 from eventsourcing.domain import Aggregate, event
 from pymongo.errors import DuplicateKeyError
-from serde import deserialize, serialize
 
 
 @dataclass(frozen=True)
@@ -23,8 +22,6 @@ class StoreTableModel:
     store_items: List[dict]
 
 
-@serialize
-@deserialize
 @dataclass
 class StoreItemEntity(Entity):
     value: float
@@ -32,15 +29,11 @@ class StoreItemEntity(Entity):
     description: str
 
 
-@serialize
-@deserialize
 @dataclass
 class StoreEntity(Entity):
     family_id: UUID
 
 
-@serialize
-@deserialize
 @dataclass
 class StoreAggregate(Aggregate):
     store: StoreEntity
@@ -96,7 +89,7 @@ class StoreDomainWriteModel:
             store_id=aggregate.id,
             store_items=aggregate.store_items
         )
-        serialized_data = serialize_dataclass_to_dict(model=aggregate)
+        serialized_data = serialize_object_to_dict(o=aggregate)
         serialized_data['id'] = aggregate.id
 
         try:

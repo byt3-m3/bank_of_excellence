@@ -3,11 +3,9 @@ from uuid import UUID
 from uuid import uuid4
 
 from boe.clients.bank_manager_worker_client import BankManagerWorkerClient
-from boe.clients.persistence_worker_client import PersistenceWorkerClient
 from boe.clients.user_manager_worker_client import UserManagerWorkerClient, SubscriptionTypeEnum
 from boe.env import AMQP_URL, STORE_MANAGER_WORKER_QUEUE
-from boe.lib.domains.bank_domain import BankDomainFactory, BankTransactionMethodEnum
-from boe.utils.serialization_utils import serialize_dataclass_to_dict
+from boe.lib.domains.bank_domain import BankTransactionMethodEnum
 from cbaxter1988_utils.pika_utils import make_basic_pika_publisher
 
 
@@ -51,29 +49,17 @@ def publish_new_store_event():
     )
 
 
-def publish_save_aggregate_event():
-    client = PersistenceWorkerClient()
-
-    bank_account_agg = BankDomainFactory.build_bank_domain_aggregate(owner_id=uuid4(), is_overdraft_protected=False)
-    # print(bank_account_agg)
-    data = serialize_dataclass_to_dict(bank_account_agg)
-    print(data)
-    # data['bank_account']['id'] = str(data['bank_account']['id'])
-    # data['bank_account']['owner_id'] = str(data['bank_account']['owner_id'])
-    # data['bank_account']['owner_id'] = str(data['bank_account']['owner_id'])
-    #
-    client.publish_persist_bank_domain_aggregate_event(
-        aggregate=bank_account_agg
-    )
-
-
 def publish_new_family_event():
     client = UserManagerWorkerClient()
 
     client.publish_new_family_event(
         name="TEST",
         description="TEST",
-        subscription_type=SubscriptionTypeEnum.premium
+        subscription_type=SubscriptionTypeEnum.premium,
+        first_name='Courtney',
+        last_name='Baxter',
+        dob=datetime.datetime(month=9, day=6, year=1988),
+        email='cbaxtertech@gmail.com'
     )
 
 
