@@ -85,9 +85,33 @@ class CredentialTypeEnum(Enum):
 @serialize
 @deserialize
 @dataclass
+class Creds:
+
+    def update_creds(self, **kwargs):
+        pass
+
+
+@serialize
+@deserialize
+@dataclass
+class BasicCreds(Creds):
+    username: str
+    password_hash: str
+
+    def update_creds(self, username: str, password: str):
+        self.username = username
+        self.password_hash = password
+
+    def update_password_hash(self, password_hash: str):
+        self.password_hash = password_hash
+
+
+@serialize
+@deserialize
+@dataclass
 class Credential:
     credential_type: CredentialTypeEnum
-    creds: dict
+    creds: Union[Creds, BasicCreds]
 
 
 @serialize
@@ -100,8 +124,11 @@ class UserAccount(Entity):
     last_name: str
     email: str
     dob: datetime
-    grade: int = 0
-    credential: Credential = field(default=Credential(credential_type=CredentialTypeEnum.basic, creds={}))
+    grade: int = field(default=0)
+    credential: Credential = field(default=Credential(credential_type=CredentialTypeEnum.basic, creds=BasicCreds(
+        password_hash='',
+        username=""
+    )))
 
 
 @serialize
@@ -221,6 +248,12 @@ class FamilyUserAggregate(Aggregate):
             )
 
         user.credential = credential
+
+    @event
+    def update_user_basic_password_credentials(self, member_id: UUID, password_hash: str):
+        member = self.get_member_by_id(member_id=member_id)
+
+        member.credential.creds.update_password_hash(password_hash=password_hash)
 
 
 class UserDomainWriteModel:
