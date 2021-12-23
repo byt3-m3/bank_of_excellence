@@ -10,7 +10,13 @@ from boe.applications.transcodings import (
     UserAccountTypeEnumTranscoding,
 
 )
+from boe.clients.client import PikaWorkerClient
 from boe.clients.notification_worker_client import NotificationWorkerClient
+from boe.env import (
+    COGNITO_POOL_ID,
+    STAGE,
+    USER_MANAGER_WORKER_QUEUE
+)
 from boe.lib.common_models import AppEvent, AppNotification
 from boe.lib.domains.user_domain import (
     UserDomainFactory,
@@ -18,6 +24,7 @@ from boe.lib.domains.user_domain import (
     FamilyUserAggregate,
     UserDomainWriteModel
 )
+from cbaxter1988_utils.aws_cognito_utils import add_new_user_basic
 from cbaxter1988_utils.log_utils import get_logger
 from eventsourcing.application import Application
 from eventsourcing.persistence import Transcoder
@@ -53,6 +60,15 @@ class NewChildAccountEvent(AppEvent):
 class FamilySubscriptionChangeEvent(AppEvent):
     family_id: UUID
     subscription_type: SubscriptionTypeEnum
+
+
+@serialize
+@deserialize
+@dataclass(frozen=True)
+class CreateCognitoUserEvent(AppEvent):
+    username: str
+    email: str
+    is_real: bool = False
 
 
 @serialize
@@ -126,6 +142,14 @@ class UserManagerAppEventFactory:
             aggregate_id=aggregate_id
         )
 
+    @staticmethod
+    def build_create_cognito_user_event(email: str, username: str, is_real: bool = False) -> CreateCognitoUserEvent:
+        return CreateCognitoUserEvent(
+            email=email,
+            username=username,
+            is_real=is_real
+        )
+
 
 class UserManagerApp(Application):
 
@@ -135,6 +159,12 @@ class UserManagerApp(Application):
 
         self.notification_service_client = NotificationWorkerClient()
         self.write_model = UserDomainWriteModel()
+        self.pika_client = PikaWorkerClient(
+            worker_que=USER_MANAGER_WORKER_QUEUE,
+            worker_exchange=f'{STAGE}_USER_MANAGER_EXCHANGE',
+            worker_routing_key=f'{STAGE}_USER_MANAGER_KEY',
+
+        )
 
     def register_transcodings(self, transcoder: Transcoder):
         super().register_transcodings(transcoder)
@@ -185,13 +215,24 @@ class UserManagerApp(Application):
             grade=event.grade,
         )
         child_account = aggregate.members[len(aggregate.members) - 1]
+
         self._save_aggregate(aggregate=aggregate)
+
+        self.pika_client.publish_event(
+            event=CreateCognitoUserEvent(
+                email=event.email,
+                username=f'{event.first_name}_{event.last_name}'.lower(),
+                is_real=False if STAGE in ['LOCAL', 'BETA'] else True
+            )
+        )
         self.notification_service_client.publish_event(
             event=UserManagerAppEventFactory.build_child_created_notification(
                 child_id=str(child_account.id),
-                family_id=str(aggregate.id)
+                family_id=str(aggregate.id),
+
             )
         )
+
         return aggregate.id
 
     def handle_family_subscription_type_change_event(self, event: FamilySubscriptionChangeEvent) -> UUID:
@@ -204,3 +245,14 @@ class UserManagerApp(Application):
 
         self._save_aggregate(aggregate=aggregate)
         return aggregate.id
+
+    def handle_create_cognito_user_event(self, event: CreateCognitoUserEvent) -> UUID:
+        if event.is_real:
+            add_new_user_basic(
+                pool_id=COGNITO_POOL_ID,
+                username=event.username,
+                user_email=event.email
+            )
+            logger.info(f"Successfully Processed event='{event}'")
+        else:
+            logger.info(f"Received and Processed Fake Event={event}")
