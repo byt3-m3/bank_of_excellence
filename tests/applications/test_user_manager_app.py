@@ -24,6 +24,12 @@ def notification_worker_client_mock():
 
 
 @fixture
+def aws_cognito_mock():
+    with patch("boe.applications.user_domain_apps.add_new_user_basic", autospec=True) as cognito_mock:
+        yield cognito_mock
+
+
+@fixture
 def family_uuid():
     return UUID("43f7858bbf9240258c8428e422bd3a28")
 
@@ -89,6 +95,7 @@ def test_user_manager_app_when_handling_new_family_app_event(
 
 
 def test_user_manager_app_when_handling_new_child_account_event(
+        aws_cognito_mock,
         notification_worker_client_mock,
         write_model_mock,
         user_manager_app_testable,
@@ -112,6 +119,7 @@ def test_user_manager_app_when_handling_new_child_account_event(
 
     write_model_mock.assert_called()
     notification_worker_client_mock.assert_called()
+    aws_cognito_mock.assert_called()
 
 
 def test_user_manager_app_when_handling_family_subscription_change_event(
