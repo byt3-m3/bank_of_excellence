@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Union
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from boe.applications.store_domain_apps import StoreManagerAppEventFactory
 from boe.applications.transcodings import (
@@ -111,7 +111,7 @@ class UserManagerAppEventFactory:
             last_name=last_name,
             email=email,
             dob=datetime.fromisoformat(dob),
-            id=UUID(kwargs.get("id"))
+            id=UUID(kwargs.get("id", str(uuid4())))
         )
 
     @staticmethod

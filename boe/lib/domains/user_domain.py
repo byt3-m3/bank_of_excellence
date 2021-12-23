@@ -350,14 +350,15 @@ class UserDomainFactory:
             name: str,
             subscription_type: SubscriptionTypeEnum,
             members: List[UserAccount] = None,
-            id: str = None
+            **kwargs
+
     ):
         return FamilyUserAggregate.create(
             description=description,
             name=name,
             subscription_type=subscription_type,
             members=members,
-            id=UUID(id)
+            id=UUID(kwargs.get("id", str(uuid4())))
         )
 
     @staticmethod
