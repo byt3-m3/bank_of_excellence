@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Union
 from uuid import UUID
 
+from boe.applications.store_domain_apps import StoreManagerAppEventFactory
 from boe.applications.transcodings import (
     FamilyEntityTranscoding,
 
@@ -15,7 +16,8 @@ from boe.clients.notification_worker_client import NotificationWorkerClient
 from boe.env import (
     COGNITO_POOL_ID,
     STAGE,
-    USER_MANAGER_WORKER_QUEUE
+    USER_MANAGER_WORKER_QUEUE,
+    STORE_MANAGER_WORKER_QUEUE
 )
 from boe.lib.common_models import AppEvent, AppNotification
 from boe.lib.domains.user_domain import (
@@ -184,10 +186,17 @@ class UserManagerApp(Application):
 
         self.notification_service_client = NotificationWorkerClient()
         self.write_model = UserDomainWriteModel()
-        self.pika_client = PikaWorkerClient(
+        self.user_manager_pika_client = PikaWorkerClient(
             worker_que=USER_MANAGER_WORKER_QUEUE,
             worker_exchange=f'{STAGE}_USER_MANAGER_EXCHANGE',
             worker_routing_key=f'{STAGE}_USER_MANAGER_KEY',
+
+        )
+
+        self.store_manager_pika_client = PikaWorkerClient(
+            worker_que=STORE_MANAGER_WORKER_QUEUE,
+            worker_exchange=f'{STAGE}_STORE_MANAGER_EXCHANGE',
+            worker_routing_key=f'{STAGE}_STORE_MANAGER_KEY',
 
         )
 
@@ -222,7 +231,7 @@ class UserManagerApp(Application):
 
         self._save_aggregate(aggregate=family)
 
-        self.pika_client.publish_event(
+        self.user_manager_pika_client.publish_event(
             event=UserManagerAppEventFactory.build_new_adult_account_event(
                 family_id=str(family.id),
                 last_name=event.last_name,
@@ -231,6 +240,14 @@ class UserManagerApp(Application):
                 dob=event.dob
             )
         )
+
+        self.store_manager_pika_client.publish_event(
+            event=StoreManagerAppEventFactory.build_new_store_event(
+                family_id=str(family.id),
+
+            )
+        )
+
         return family.id
 
     def handle_new_child_account_event(self, event: NewChildAccountEvent) -> UUID:
@@ -247,7 +264,7 @@ class UserManagerApp(Application):
 
         self._save_aggregate(aggregate=aggregate)
 
-        self.pika_client.publish_event(
+        self.user_manager_pika_client.publish_event(
             event=CreateCognitoUserEvent(
                 email=event.email,
                 username=f'{event.first_name}_{event.last_name}'.lower(),
@@ -276,7 +293,7 @@ class UserManagerApp(Application):
 
         self._save_aggregate(aggregate=aggregate)
 
-        self.pika_client.publish_event(
+        self.user_manager_pika_client.publish_event(
             event=CreateCognitoUserEvent(
                 email=event.email,
                 username=f'{event.first_name}_{event.last_name}'.lower(),
