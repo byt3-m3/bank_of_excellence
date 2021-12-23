@@ -3,3 +3,4 @@
 *.iml
 venv
 _db
+.env
