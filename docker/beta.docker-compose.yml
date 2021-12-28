@@ -3,16 +3,16 @@ version: '3.1'
 services:
   boe_api:
     image: cbaxter1988/boe_core
-      environment:
-        - AMQP_USER=guest
-        - AMQP_PW=guest
-        - AMQP_HOST=192.168.1.5
-        - AMQP_PORT=5672
-        - STAGE=BETA
+    environment:
+      - AMQP_USER=guest
+      - AMQP_PW=guest
+      - AMQP_HOST=192.168.1.5
+      - AMQP_PORT=5672
+      - STAGE=BETA
 
-      command: python3 -m boe.api.boe_api
-      ports:
-        - 5000:5000
+    command: python3 -m boe.api.boe_api
+    ports:
+      - 5000:5000
 
 
 
