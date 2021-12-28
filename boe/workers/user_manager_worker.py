@@ -1,7 +1,15 @@
 import json
 import os
 
-from boe.applications.user_domain_apps import UserManagerApp, UserManagerAppEventFactory
+from boe.applications.user_domain_apps import (
+    UserManagerAppEventFactory,
+    UserManagerApp,
+    NewAdultAccountEvent,
+    NewChildAccountEvent,
+    FamilySubscriptionChangeEvent,
+    CreateCognitoUserEvent,
+    NewFamilyEvent
+)
 from boe.env import (
     AMQP_URL,
     USER_MANAGER_WORKER_QUEUE,
@@ -11,6 +19,7 @@ from boe.env import (
     USER_MANAGER_WORKER_EVENT_STORE
 
 )
+from boe.lib.event_handler import EventMapRegister
 from cbaxter1988_utils.aws_cognito_utils import get_cognito_idp_client
 from cbaxter1988_utils.log_utils import get_logger
 from cbaxter1988_utils.pika_utils import PikaQueueServiceWrapper, make_basic_pika_consumer
@@ -21,7 +30,7 @@ from pika.spec import Basic, BasicProperties
 INFRASTRUCTURE_FACTORY = "eventsourcing.sqlite:Factory"
 SQLITE_DBNAME = USER_MANAGER_WORKER_EVENT_STORE
 
-os.environ['INFRASTRUCTURE_FACTORY'] = INFRASTRUCTURE_FACTORY
+os.environ['INFRASTRUCTUREADDASDWED_FACTORY'] = INFRASTRUCTURE_FACTORY
 os.environ['SQLITE_DBNAME'] = SQLITE_DBNAME
 
 logger = get_logger('UserManagerWorker')
@@ -29,28 +38,39 @@ logger = get_logger('UserManagerWorker')
 app = UserManagerApp()
 app_event_factory = UserManagerAppEventFactory()
 
-event_handler_map = {
+# AppEvents Registration
+event_map_register = EventMapRegister()
+
+event_map = {
     "NewFamilyEvent": {
-        "handler": app.handle_new_family_event,
-        "event_factory": app_event_factory.build_new_family_event
+        "event_factory": app_event_factory.build_new_family_event,
+        "event_class": NewFamilyEvent
     },
     "NewChildAccountEvent": {
-        "handler": app.handle_new_child_account_event,
-        "event_factory": app_event_factory.build_new_child_account_event
+        "event_factory": app_event_factory.build_new_child_account_event,
+        "event_class": NewChildAccountEvent
     },
     "FamilySubscriptionChangeEvent": {
-        "handler": app.handle_family_subscription_type_change_event,
-        "event_factory": app_event_factory.build_family_subscription_change_event
+        "event_factory": app_event_factory.build_family_subscription_change_event,
+        "event_class": FamilySubscriptionChangeEvent
     },
     "CreateCognitoUserEvent": {
-        "handler": app.handle_create_cognito_user_event,
-        "event_factory": app_event_factory.build_create_cognito_user_event
+        "event_factory": app_event_factory.build_create_cognito_user_event,
+        "event_class": CreateCognitoUserEvent
     },
     "NewAdultAccountEvent": {
-        "handler": app.handle_new_adult_account_event,
-        "event_factory": app_event_factory.build_new_adult_account_event
+        "event_factory": app_event_factory.build_new_adult_account_event,
+        "event_class": NewAdultAccountEvent
     }
 }
+
+for event_name, event_options in event_map.items():
+    event_map_register.register_event(
+        event_name=event_name,
+        event_handler=app.handle_event,
+        event_factory_func=event_options['event_factory'],
+        event_class=event_options['event_class'],
+    )
 
 
 def on_message_callback(ch: BlockingChannel, method: Basic.Deliver, properties: BasicProperties, body):
@@ -59,12 +79,17 @@ def on_message_callback(ch: BlockingChannel, method: Basic.Deliver, properties: 
     logger.info(f'Received msg: {body}')
 
     for event_name, payload in event.items():
+        event_factory = event_map_register.get_event_factory(event_name=event_name)
+        event_class = event_map_register.get_event_class(event_name=event_name)
+        handler = event_map_register.get_event_handler(event_name=event_name)
 
-        handler = event_handler_map.get(event_name)['handler']
-        event_factory = event_handler_map.get(event_name)['event_factory']
         _event = event_factory(**payload)
+        if not isinstance(_event, event_class):
+            ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
+            raise TypeError(f"Invalid Event type, must be of type {event_class}")
+
         try:
-            handler(event=_event)
+            handler(_event)
             logger.info(f'Processed ApplicationEvent={_event}')
             ch.basic_ack(delivery_tag=method.delivery_tag)
 
@@ -75,12 +100,9 @@ def on_message_callback(ch: BlockingChannel, method: Basic.Deliver, properties: 
             logger.error(f'DLQ: Sending Event="{event}" -- Exception={err}')
             ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
 
-
-
         except Exception as error:
             ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
             logger.error(f'Unknown Error Encountered: {error}')
-
             raise
 
 

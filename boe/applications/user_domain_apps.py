@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
+from functools import singledispatchmethod
 from typing import Union
 from uuid import UUID, uuid4
 
@@ -221,11 +222,12 @@ class UserManagerApp(Application):
             logger.error(f"Trouble Saving Aggregate {aggregate}")
             raise
 
-    def get_user_account(self, family_id: UUID, account_id: UUID):
-        aggregate: FamilyUserAggregate = self.repository.get(aggregate_id=family_id)
-        return aggregate.member_map.get(account_id)
+    @singledispatchmethod
+    def handle_event(self, event):
+        raise NotImplementedError("Invalid Event")
 
-    def handle_new_family_event(self, event: NewFamilyEvent) -> UUID:
+    @handle_event.register(NewFamilyEvent)
+    def _handle_new_family_event(self, event: NewFamilyEvent):
         aggregate = self.factory.build_user_family_user_aggregate(
             description=event.description,
             name=event.name,
@@ -254,7 +256,8 @@ class UserManagerApp(Application):
 
         return aggregate.id
 
-    def handle_new_child_account_event(self, event: NewChildAccountEvent) -> UUID:
+    @handle_event.register(NewChildAccountEvent)
+    def _handle_new_child_account_event(self, event: NewChildAccountEvent):
         aggregate: FamilyUserAggregate = self.repository.get(aggregate_id=event.family_id)
 
         aggregate.create_new_child_member(
@@ -285,7 +288,8 @@ class UserManagerApp(Application):
 
         return aggregate.id
 
-    def handle_new_adult_account_event(self, event: NewAdultAccountEvent) -> UUID:
+    @handle_event.register(NewAdultAccountEvent)
+    def _handle_new_adult_account_event(self, event: NewAdultAccountEvent):
         aggregate: FamilyUserAggregate = self.repository.get(aggregate_id=event.family_id)
 
         aggregate.create_new_adult_member(
@@ -307,7 +311,8 @@ class UserManagerApp(Application):
 
         return aggregate.id
 
-    def handle_family_subscription_type_change_event(self, event: FamilySubscriptionChangeEvent) -> UUID:
+    @handle_event.register(FamilySubscriptionChangeEvent)
+    def _handle_family_subscription_change_event(self, event: FamilySubscriptionChangeEvent):
         aggregate = self._get_family_aggregate(family_id=event.family_id)
         if event.subscription_type == aggregate.family.subscription_type:
             logger.error(f"Family Subscription Already Set: '{aggregate.family.subscription_type}', Rejecting Event")
@@ -318,7 +323,8 @@ class UserManagerApp(Application):
         self._save_aggregate(aggregate=aggregate)
         return aggregate.id
 
-    def handle_create_cognito_user_event(self, event: CreateCognitoUserEvent) -> UUID:
+    @handle_event.register(CreateCognitoUserEvent)
+    def _handle_create_cognito_user_event(self, event: CreateCognitoUserEvent):
         if event.is_real:
             add_new_user_basic(
                 pool_id=COGNITO_POOL_ID,
