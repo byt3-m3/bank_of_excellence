@@ -5,6 +5,8 @@ boe.egg-info/PKG-INFO
 boe.egg-info/SOURCES.txt
 boe.egg-info/dependency_links.txt
 boe.egg-info/top_level.txt
+boe/api/__init__.py
+boe/api/boe_api.py
 boe/applications/__init__.py
 boe/applications/bank_domain_apps.py
 boe/applications/persistence_domain_apps.py
@@ -34,6 +36,7 @@ boe/utils/__init__.py
 boe/utils/core_utils.py
 boe/utils/eventsourcing_utils.py
 boe/utils/serialization_utils.py
+boe/utils/validation_utils.py
 boe/workers/__init__.py
 boe/workers/bank_manager_worker.py
 boe/workers/persistence_service_worker.py
