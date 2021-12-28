@@ -19,7 +19,7 @@ from boe.env import (
     USER_MANAGER_WORKER_EVENT_STORE
 
 )
-from boe.lib.event_handler import EventMapRegister
+from boe.lib.event_register import EventMapRegister
 from cbaxter1988_utils.aws_cognito_utils import get_cognito_idp_client
 from cbaxter1988_utils.log_utils import get_logger
 from cbaxter1988_utils.pika_utils import PikaQueueServiceWrapper, make_basic_pika_consumer
