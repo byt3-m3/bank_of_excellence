@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from functools import singledispatchmethod
 from uuid import UUID
 
 from boe.applications.transcodings import (
@@ -85,7 +86,12 @@ class BankManagerApp(Application):
         self.save(aggregate)
         self.write_model.save_bank_aggregate(aggregate=aggregate)
 
-    def handle_establish_new_account_event(self, event: EstablishNewAccountEvent) -> UUID:
+    @singledispatchmethod
+    def handle_event(self, event):
+        raise NotImplementedError(f"Invalid Event: {event}")
+
+    @handle_event.register(EstablishNewAccountEvent)
+    def _handle_establish_new_account_event(self, event: EstablishNewAccountEvent) -> UUID:
         aggregate = self.factory.build_bank_domain_aggregate(
             owner_id=event.owner_id,
             is_overdraft_protected=event.is_overdraft_protected
@@ -99,7 +105,8 @@ class BankManagerApp(Application):
 
         return aggregate.id
 
-    def handle_new_transaction_event(self, event: NewTransactionEvent) -> UUID:
+    @handle_event.register(NewTransactionEvent)
+    def _handle_new_transaction_event(self, event: NewTransactionEvent) -> UUID:
         transaction = self.factory.build_bank_transaction_entity(
             item_id=event.item_id,
             method=event.transaction_method,

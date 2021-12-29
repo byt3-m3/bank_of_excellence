@@ -52,7 +52,7 @@ def test_bank_manager_app_when_handle_establish_new_account_event(
 ):
     app = bank_manager_app_testable
     event = establish_new_account_event
-    _id = app.handle_establish_new_account_event(event=event)
+    _id = app.handle_event(event)
 
     aggregate = app.repository.get(_id)
     assert isinstance(aggregate, BankDomainAggregate)
@@ -76,8 +76,8 @@ def test_bank_manager_app_when_handling_new_transaction_event(
         transaction_method=BankTransactionMethodEnum.add
     )
 
-    app.handle_establish_new_account_event(event=new_account_event)
-    aggregate_id = app.handle_new_transaction_event(event=transaction_event)
+    app.handle_event(new_account_event)
+    aggregate_id = app.handle_event(transaction_event)
     aggregate = app.repository.get(aggregate_id=aggregate_id)
 
     assert isinstance(aggregate, BankDomainAggregate)
