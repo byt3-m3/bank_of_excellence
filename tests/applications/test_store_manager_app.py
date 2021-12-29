@@ -1,5 +1,6 @@
-from uuid import uuid4
 from unittest.mock import patch
+from uuid import uuid4
+
 from boe.applications.store_domain_apps import StoreManagerApp, StoreManagerAppEventFactory
 from pytest import fixture
 
@@ -31,7 +32,7 @@ def test_store_manager_app_when_handling_new_store_event(
     app = store_manager_app_testable
     event = new_store_event
 
-    app.handle_new_store_event(event=event)
+    app.handle_event(event)
     store_domain_write_model_mock.assert_called()
 
 
@@ -41,7 +42,7 @@ def test_store_manager_app_when_handling_new_store_item_event(
         new_store_event
 ):
     app = store_manager_app_testable
-    store_id = app.handle_new_store_event(event=new_store_event)
+    store_id = app.handle_event(new_store_event)
 
     new_store_item_event = StoreManagerAppEventFactory.build_new_store_item_event(
         store_id=str(store_id),
@@ -50,7 +51,7 @@ def test_store_manager_app_when_handling_new_store_item_event(
         item_value=100
     )
 
-    app.handle_new_store_item_event(event=new_store_item_event)
+    app.handle_event(new_store_item_event)
     store_domain_write_model_mock.assert_called()
 
 
@@ -60,7 +61,7 @@ def test_store_manager_app_when_handling_remove_store_item_event(
         new_store_event
 ):
     app = store_manager_app_testable
-    store_id = app.handle_new_store_event(event=new_store_event)
+    store_id = app.handle_event(new_store_event)
 
     new_store_item_event = StoreManagerAppEventFactory.build_new_store_item_event(
         store_id=str(store_id),
@@ -68,7 +69,7 @@ def test_store_manager_app_when_handling_remove_store_item_event(
         item_description="TEST_DESC",
         item_value=100
     )
-    app.handle_new_store_item_event(event=new_store_item_event)
+    app.handle_event(new_store_item_event)
 
     store = app.get_store(aggregate_id=store_id)
 
@@ -79,7 +80,7 @@ def test_store_manager_app_when_handling_remove_store_item_event(
             store_id=str(store_id),
             item_id=str(item_id)
         )
-        app.handle_remove_store_item_event(event=remove_store_item_event)
+        app.handle_event(remove_store_item_event)
 
     store = app.get_store(aggregate_id=store_id)
     assert len(store.store_item_ids) == 0

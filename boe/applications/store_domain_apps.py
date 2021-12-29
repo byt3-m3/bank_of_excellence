@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from functools import singledispatchmethod
 from logging import getLogger
 from uuid import UUID
 
@@ -88,7 +89,12 @@ class StoreManagerApp(Application):
             aggregate=aggregate
         )
 
-    def handle_new_store_event(self, event: NewStoreEvent) -> UUID:
+    @singledispatchmethod
+    def handle_event(self, event):
+        raise NotImplementedError(f"Invalid Event Type, {event}")
+
+    @handle_event.register(NewStoreEvent)
+    def _(self, event: NewStoreEvent) -> UUID:
         store_aggregate = self.factory.build_store_aggregate(
             family_id=event.family_id
         )
@@ -98,7 +104,8 @@ class StoreManagerApp(Application):
         logger.info(f"Created Store: {store_aggregate.id}")
         return store_aggregate.id
 
-    def handle_new_store_item_event(self, event: NewStoreItemEvent) -> UUID:
+    @handle_event.register(NewStoreItemEvent)
+    def _(self, event: NewStoreItemEvent) -> UUID:
         store = self.get_store(aggregate_id=event.store_id)
 
         store_item = self.factory.build_store_item_entity(
@@ -113,7 +120,8 @@ class StoreManagerApp(Application):
         logger.info(f"Added Item='{store_item.id}' to Store='{store.id}'")
         return store.id
 
-    def handle_remove_store_item_event(self, event: RemoveStoreItemEvent) -> UUID:
+    @handle_event.register(RemoveStoreItemEvent)
+    def _(self, event: RemoveStoreItemEvent) -> UUID:
         store = self.get_store(aggregate_id=event.store_id)
         store.remove_store_item(
             item_id=str(event.item_id)
@@ -122,3 +130,38 @@ class StoreManagerApp(Application):
         self._save_aggregate(aggregate=store)
         logger.info(f"Removed Item='{event.item_id}' from Store='{store.id}'")
         return store.id
+
+    # def handle_new_store_event(self, event: NewStoreEvent) -> UUID:
+    #     store_aggregate = self.factory.build_store_aggregate(
+    #         family_id=event.family_id
+    #     )
+    #
+    #     self._save_aggregate(aggregate=store_aggregate)
+    #
+    #     logger.info(f"Created Store: {store_aggregate.id}")
+    #     return store_aggregate.id
+
+    # def handle_new_store_item_event(self, event: NewStoreItemEvent) -> UUID:
+    #     store = self.get_store(aggregate_id=event.store_id)
+    #
+    #     store_item = self.factory.build_store_item_entity(
+    #         description=event.item_description,
+    #         name=event.item_name,
+    #         value=event.item_value
+    #     )
+    #
+    #     store.new_store_item(store_item=store_item)
+    #
+    #     self._save_aggregate(aggregate=store)
+    #     logger.info(f"Added Item='{store_item.id}' to Store='{store.id}'")
+    #     return store.id
+
+    # def handle_remove_store_item_event(self, event: RemoveStoreItemEvent) -> UUID:
+    #     store = self.get_store(aggregate_id=event.store_id)
+    #     store.remove_store_item(
+    #         item_id=str(event.item_id)
+    #     )
+    #
+    #     self._save_aggregate(aggregate=store)
+    #     logger.info(f"Removed Item='{event.item_id}' from Store='{store.id}'")
+    #     return store.id
