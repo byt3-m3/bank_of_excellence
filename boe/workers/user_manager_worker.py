@@ -37,40 +37,17 @@ logger = get_logger('UserManagerWorker')
 
 app = UserManagerApp()
 app_event_factory = UserManagerAppEventFactory()
-
-# AppEvents Registration
 event_map_register = EventMapRegister()
 
-event_map = {
-    "NewFamilyEvent": {
-        "event_factory": app_event_factory.build_new_family_event,
-        "event_class": NewFamilyEvent
-    },
-    "NewChildAccountEvent": {
-        "event_factory": app_event_factory.build_new_child_account_event,
-        "event_class": NewChildAccountEvent
-    },
-    "FamilySubscriptionChangeEvent": {
-        "event_factory": app_event_factory.build_family_subscription_change_event,
-        "event_class": FamilySubscriptionChangeEvent
-    },
-    "CreateCognitoUserEvent": {
-        "event_factory": app_event_factory.build_create_cognito_user_event,
-        "event_class": CreateCognitoUserEvent
-    },
-    "NewAdultAccountEvent": {
-        "event_factory": app_event_factory.build_new_adult_account_event,
-        "event_class": NewAdultAccountEvent
-    }
-}
 
-for event_name, event_options in event_map.items():
-    event_map_register.register_event(
-        event_name=event_name,
-        event_handler=app.handle_event,
-        event_factory_func=event_options['event_factory'],
-        event_class=event_options['event_class'],
-    )
+def register_event_map(event_map: dict):
+    for event_name, event_options in event_map.items():
+        event_map_register.register_event(
+            event_name=event_name,
+            event_handler=app.handle_event,
+            event_factory_func=event_options['event_factory'],
+            event_class=event_options['event_class'],
+        )
 
 
 def on_message_callback(ch: BlockingChannel, method: Basic.Deliver, properties: BasicProperties, body):
@@ -127,6 +104,30 @@ def main():
 
     try:
 
+        event_map = {
+            "NewFamilyEvent": {
+                "event_factory": app_event_factory.build_new_family_event,
+                "event_class": NewFamilyEvent
+            },
+            "NewChildAccountEvent": {
+                "event_factory": app_event_factory.build_new_child_account_event,
+                "event_class": NewChildAccountEvent
+            },
+            "FamilySubscriptionChangeEvent": {
+                "event_factory": app_event_factory.build_family_subscription_change_event,
+                "event_class": FamilySubscriptionChangeEvent
+            },
+            "CreateCognitoUserEvent": {
+                "event_factory": app_event_factory.build_create_cognito_user_event,
+                "event_class": CreateCognitoUserEvent
+            },
+            "NewAdultAccountEvent": {
+                "event_factory": app_event_factory.build_new_adult_account_event,
+                "event_class": NewAdultAccountEvent
+            }
+        }
+
+        register_event_map(event_map=event_map)
         consumer.run()
     except (ChannelClosedByBroker, StreamLostError, AMQPHeartbeatTimeout):
         consumer.run()
