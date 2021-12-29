@@ -4,7 +4,9 @@ import os
 import pika.exceptions
 from boe.applications.bank_domain_apps import BankDomainAppEventFactory
 from boe.applications.bank_domain_apps import (
-    BankManagerApp
+    BankManagerApp,
+    EstablishNewAccountEvent,
+    NewTransactionEvent
 
 )
 from boe.env import (
@@ -15,6 +17,8 @@ from boe.env import (
     BOE_DLQ_EXCHANGE,
     BOE_DLQ_DEFAULT_ROUTING_KEY
 )
+from boe.lib.event_register import EventMapRegister
+from boe.utils.app_event_utils import register_event_map
 from cbaxter1988_utils.log_utils import get_logger
 from cbaxter1988_utils.pika_utils import make_basic_pika_consumer, PikaQueueServiceWrapper
 from eventsourcing.application import AggregateNotFound
@@ -29,29 +33,19 @@ SQLITE_DBNAME = BANK_MANAGER_WORKER_EVENT_STORE
 os.environ['INFRASTRUCTURE_FACTORY'] = INFRASTRUCTURE_FACTORY
 os.environ['SQLITE_DBNAME'] = SQLITE_DBNAME
 
-bank_manager_app = BankManagerApp()
-
-event_handler_map = {
-    'EstablishNewAccountEvent': {
-        "handler": bank_manager_app.handle_establish_new_account_event,
-        "event_factory": BankDomainAppEventFactory.build_establish_new_account_event
-    },
-    'NewTransactionEvent': {
-        "handler": bank_manager_app.handle_new_transaction_event,
-        "event_factory": BankDomainAppEventFactory.build_new_transaction_event
-    }
-}
+app = BankManagerApp()
+event_map_register = EventMapRegister()
 
 
 def on_message_callback(ch: BlockingChannel, method: Basic.Deliver, properties: BasicProperties, body):
     event = json.loads(body)
     logger.info(f'Received msg: {body}')
     for event_name, payload in event.items():
-        handler = event_handler_map.get(event_name)['handler']
-        event_factory = event_handler_map.get(event_name)['event_factory']
+        handler = event_map_register.get_event_handler(event_name=event_name)
+        event_factory = event_map_register.get_event_factory(event_name=event_name)
         _event = event_factory(**payload)
         try:
-            result = handler(event=_event)
+            handler(_event)
 
             logger.info(f'Processed ApplicationEvent={_event} - Handler={handler}')
 
@@ -88,7 +82,19 @@ def main():
         on_message_callback=on_message_callback,
     )
     try:
-
+        event_map = {
+            'EstablishNewAccountEvent': {
+                "event_factory": BankDomainAppEventFactory.build_establish_new_account_event,
+                'event_class': EstablishNewAccountEvent,
+                'event_handler': app.handle_event
+            },
+            'NewTransactionEvent': {
+                "event_factory": BankDomainAppEventFactory.build_new_transaction_event,
+                "event_class": NewTransactionEvent,
+                'event_handler': app.handle_event
+            }
+        }
+        register_event_map(event_map_register=event_map_register, event_map=event_map)
         consumer.run()
     except pika.exceptions.ChannelClosedByBroker:
         consumer.run()
