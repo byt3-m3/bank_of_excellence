@@ -3,6 +3,9 @@ import os
 
 from boe.applications.store_domain_apps import (
     StoreManagerApp,
+    NewStoreEvent,
+    RemoveStoreItemEvent,
+    NewStoreItemEvent,
     StoreManagerAppEventFactory
 )
 from boe.env import (
@@ -13,6 +16,8 @@ from boe.env import (
     BOE_DLQ_DEFAULT_ROUTING_KEY,
     BOE_DLQ_EXCHANGE
 )
+from boe.lib.event_register import EventMapRegister
+from boe.utils.app_event_utils import register_event_map
 from cbaxter1988_utils.log_utils import get_logger
 from cbaxter1988_utils.pika_utils import make_basic_pika_consumer, PikaQueueServiceWrapper
 from pika.adapters.blocking_connection import BlockingChannel
@@ -29,12 +34,7 @@ os.environ['SQLITE_DBNAME'] = SQLITE_DBNAME
 
 app = StoreManagerApp()
 
-event_handler_map = {
-    "NewStoreEvent": {
-        "handler": app.handle_new_store_event,
-        "event_factory": StoreManagerAppEventFactory.build_new_store_event
-    }
-}
+event_map_register = EventMapRegister()
 
 
 def on_message_callback(ch: BlockingChannel, method: Basic.Deliver, properties: BasicProperties, body):
@@ -42,15 +42,19 @@ def on_message_callback(ch: BlockingChannel, method: Basic.Deliver, properties: 
     logger.info(f'Received msg: {body}')
 
     for event_name, payload in event.items():
-        handler = event_handler_map.get(event_name)['handler']
-        event_factory = event_handler_map.get(event_name)['event_factory']
+        handler = event_map_register.get_event_handler(event_name=event_name)
+        event_factory = event_map_register.get_event_factory(event_name=event_name)
         _event = event_factory(**payload)
+        try:
+            handler(_event)
 
-        handler(event=_event)
-        #
-        logger.info(f'Processed ApplicationEvent={_event} - Handler={handler}')
+            logger.info(f'Processed ApplicationEvent={_event}')
 
-        ch.basic_ack(delivery_tag=method.delivery_tag)
+            ch.basic_ack(delivery_tag=method.delivery_tag)
+
+        except Exception:
+            ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
+            raise
 
 
 def main():
@@ -73,6 +77,25 @@ def main():
     )
 
     try:
+        event_map = {
+            "NewStoreEvent": {
+                "event_handler": app.handle_event,
+                "event_factory": StoreManagerAppEventFactory.build_new_store_event,
+                "event_class": NewStoreEvent
+            },
+            "NewStoreItemEvent": {
+                "event_handler": app.handle_event,
+                "event_factory": StoreManagerAppEventFactory.build_new_store_item_event,
+                "event_class": NewStoreItemEvent
+            },
+            "RemoveStoreItemEvent": {
+                "event_handler": app.handle_event,
+                "event_factory": StoreManagerAppEventFactory.build_remove_store_item_event,
+                "event_class": RemoveStoreItemEvent
+            },
+
+        }
+        register_event_map(event_map_register=event_map_register, event_map=event_map)
 
         consumer.run()
     except ChannelClosedByBroker:
