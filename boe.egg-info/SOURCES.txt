@@ -44,13 +44,13 @@ boe/workers/user_manager_worker.py
 tests/__init__.py
 tests/conftest.py
 tests/applications/__init__.py
+tests/applications/_test_persistence_service_app.py
 tests/applications/test_bank_manager_app.py
-tests/applications/test_persistence_service_app.py
 tests/applications/test_store_manager_app.py
 tests/applications/test_user_manager_app.py
 tests/lib/__init__.py
 tests/lib/domains/__init__.py
+tests/lib/domains/_test_persistence_domain.py
 tests/lib/domains/test_bank_domain.py
-tests/lib/domains/test_persistence_domain.py
 tests/lib/domains/test_store_domain.py
 tests/lib/domains/test_user_domain.py
