@@ -11,9 +11,11 @@ from boe.env import (
     FAMILY_TABLE
 )
 from boe.lib.common_models import Entity
+from boe.secrets import MONGO_DB_PASSWORD, MONGO_DB_USERNAME
 from boe.utils.serialization_utils import serialize_object_to_dict
 from cbaxter1988_utils.pymongo_utils import (
     get_client,
+    get_mongo_client_w_auth,
     get_database,
     add_item,
     get_item,
@@ -250,9 +252,11 @@ class FamilyUserAggregate(Aggregate):
 
 class UserDomainWriteModel:
     def __init__(self):
-        self.client = get_client(
+        self.client = get_mongo_client_w_auth(
             db_host=MONGO_HOST,
-            db_port=MONGO_PORT
+            db_port=MONGO_PORT,
+            db_username=MONGO_DB_USERNAME,
+            db_password=MONGO_DB_PASSWORD
         )
 
         self.db = get_database(client=self.client, db_name=APP_DB)
