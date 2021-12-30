@@ -19,14 +19,15 @@ from boe.env import (
 )
 from boe.lib.event_register import EventMapRegister
 from boe.utils.app_event_utils import register_event_map
+from boe.utils.metric_utils import BOEMetricWriter
 from cbaxter1988_utils.log_utils import get_logger
-from cbaxter1988_utils.pika_utils import make_basic_pika_consumer, PikaQueueServiceWrapper
+from cbaxter1988_utils.pika_utils import make_basic_pika_consumer, PikaQueueServiceWrapper, PikaUtilsError
 from eventsourcing.application import AggregateNotFound
 from pika.adapters.blocking_connection import BlockingChannel
 from pika.spec import Basic, BasicProperties
 
 logger = get_logger("bank_manager_worker")
-
+metric_writer = BOEMetricWriter()
 INFRASTRUCTURE_FACTORY = "eventsourcing.sqlite:Factory"
 SQLITE_DBNAME = BANK_MANAGER_WORKER_EVENT_STORE
 
@@ -52,13 +53,27 @@ def on_message_callback(ch: BlockingChannel, method: Basic.Deliver, properties: 
 
         except AggregateNotFound as err:
             logger.warning(f"Handled AggregateNotFound Error: {err}")
+
             ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
-            pass
+            metric_writer.publish_service_metric(
+                metric_name='DLQException',
+                service_name='BankManagerWorker',
+                field_value=1,
+                field_name='AggregateNotFound'
+            )
+            return
+
 
         except Exception as error:
             logger.error(f'Unknown Error Encountered: {error}')
             ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
-            raise
+            metric_writer.publish_service_metric(
+                metric_name='DLQException',
+                service_name='BankManagerWorker',
+                field_value=1,
+                field_name=f'{error}'
+            )
+            return
 
     ch.basic_ack(delivery_tag=method.delivery_tag)
 
@@ -96,7 +111,7 @@ def main():
         }
         register_event_map(event_map_register=event_map_register, event_map=event_map)
         consumer.run()
-    except pika.exceptions.ChannelClosedByBroker:
+    except (pika.exceptions.ChannelClosedByBroker, pika.exceptions.StreamLostError, PikaUtilsError):
         consumer.run()
 
 
