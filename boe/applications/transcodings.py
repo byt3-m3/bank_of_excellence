@@ -11,14 +11,38 @@ from boe.lib.domains.store_domain import (
     StoreEntity,
     StoreItemEntity
 )
+from boe.lib.domains.task_domain import (
+    TaskEntity,
+    TaskStatusEnum
+)
 from boe.lib.domains.user_domain import (
     FamilyEntity,
-
     SubscriptionTypeEnum,
-
     UserAccountTypeEnum
 )
 from eventsourcing.persistence import Transcoding
+
+
+class TaskStatusEnumTranscoding(Transcoding):
+    type = TaskStatusEnum
+    name = "TaskStatusEnum"
+
+    def encode(self, o: TaskStatusEnum) -> int:
+        return o.value
+
+    def decode(self, d: int):
+        return TaskStatusEnum(d)
+
+
+class TaskEntityTranscoding(Transcoding):
+    type = TaskEntity
+    name = "TaskEntity"
+
+    def encode(self, o: TaskEntity) -> str:
+        return asdict(o)
+
+    def decode(self, d: dict):
+        return TaskEntity(**d)
 
 
 class PersistenceRecordTranscoding(Transcoding):

@@ -16,6 +16,7 @@ _CHILD_ACCOUNT_TABLE_ID = os.getenv("CHILD_ACCOUNT_TABLE_ID", "child_account_tab
 _ADULT_ACCOUNT_TABLE_ID = os.getenv("ADULT_ACCOUNT_TABLE_ID", "adult_account_table")
 _FAMILY_TABLE_ID = os.getenv("USER_ACCOUNT_TABLE_ID", "family_aggregate_table")
 _STORE_TABLE_ID = os.getenv("STORE_TABLE_ID", "store_aggregate_table")
+_TASK_TABLE_ID = os.getenv("TASK_TABLE_ID", "task_aggregate_table")
 
 APP_DB = f'{STAGE}_{_APP_DB}'.upper()
 BANK_ACCOUNT_TABLE = f'{STAGE}_{_BANK_ACCOUNT_TABLE_ID}'.upper()
@@ -24,6 +25,7 @@ CHILD_ACCOUNT_TABLE = f'{STAGE}_{_CHILD_ACCOUNT_TABLE_ID}'.upper()
 ADULT_ACCOUNT_TABLE = f'{STAGE}_{_ADULT_ACCOUNT_TABLE_ID}'.upper()
 FAMILY_TABLE = f'{STAGE}_{_FAMILY_TABLE_ID}'.upper()
 STORE_TABLE = f'{STAGE}_{_STORE_TABLE_ID}'.upper()
+TASK_TABLE = f'{STAGE}_{_TASK_TABLE_ID}'.upper()
 
 # Pika VARS
 AMQP_HOST = os.getenv("AMQP_HOST", '192.168.1.5')
