@@ -1,5 +1,7 @@
 import os
 
+from boe.secrets import RABBITMQ_USERNAME, RABBITMQ_PASSWORD
+
 # Core Vars
 STAGE = os.getenv("STAGE", "LOCAL")
 
@@ -24,12 +26,10 @@ FAMILY_TABLE = f'{STAGE}_{_FAMILY_TABLE_ID}'.upper()
 STORE_TABLE = f'{STAGE}_{_STORE_TABLE_ID}'.upper()
 
 # Pika VARS
-AMQP_USER = os.getenv("AMQP_USER", 'guest')
-AMQP_PW = os.getenv("AMQP_PW", 'guest')
 AMQP_HOST = os.getenv("AMQP_HOST", '192.168.1.5')
 AMQP_PORT = os.getenv("AMQP_PORT", 5672)
 
-AMQP_URL = os.getenv("AMPQ_URL", f"amqp://{AMQP_USER}:{AMQP_PW}@{AMQP_HOST}:{AMQP_PORT}")
+AMQP_URL = os.getenv("AMPQ_URL", f"amqp://{RABBITMQ_USERNAME}:{RABBITMQ_PASSWORD}@{AMQP_HOST}:{AMQP_PORT}")
 
 _BANK_MANAGER_WORKER_QUEUE = os.getenv("BANK_MANAGER_APP_QUEUE", "bank_manager_worker_queue")
 _STORE_MANAGER_WORKER_QUEUE = os.getenv("STORE_MANAGER_APP_QUEUE", "store_manager_worker_queue")
