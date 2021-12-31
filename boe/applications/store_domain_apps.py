@@ -10,6 +10,7 @@ from boe.lib.domains.store_domain import (
     StoreAggregate,
     StoreDomainFactory
 )
+from boe.metrics import ServiceMetricPublisher
 from eventsourcing.application import Application
 from eventsourcing.persistence import Transcoder
 
@@ -74,6 +75,8 @@ class StoreManagerApp(Application):
         super().__init__()
         self.write_model = StoreDomainWriteModel()
         self.factory = StoreDomainFactory()
+        self.metric_publisher = ServiceMetricPublisher()
+        self._service_name = "StoreManagerApp"
 
     def get_store(self, aggregate_id: UUID) -> StoreAggregate:
         return self.repository.get(aggregate_id=aggregate_id)
@@ -102,6 +105,7 @@ class StoreManagerApp(Application):
         self._save_aggregate(aggregate=store_aggregate)
 
         logger.info(f"Created Store: {store_aggregate.id}")
+        self.metric_publisher.incr_store_created_success_metric(service_name=self._service_name)
         return store_aggregate.id
 
     @handle_event.register(NewStoreItemEvent)

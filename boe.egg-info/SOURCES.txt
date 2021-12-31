@@ -1,6 +1,7 @@
 setup.py
 boe/__init__.py
 boe/env.py
+boe/metrics.py
 boe/secrets.py
 boe.egg-info/PKG-INFO
 boe.egg-info/SOURCES.txt
@@ -35,6 +36,7 @@ boe/utils/__init__.py
 boe/utils/app_event_utils.py
 boe/utils/core_utils.py
 boe/utils/eventsourcing_utils.py
+boe/utils/metric_utils.py
 boe/utils/serialization_utils.py
 boe/utils/validation_utils.py
 boe/workers/__init__.py
@@ -51,7 +53,7 @@ tests/applications/test_store_manager_app.py
 tests/applications/test_user_manager_app.py
 tests/lib/__init__.py
 tests/lib/domains/__init__.py
+tests/lib/domains/_test_persistence_domain.py
 tests/lib/domains/test_bank_domain.py
-tests/lib/domains/test_persistence_domain.py
 tests/lib/domains/test_store_domain.py
 tests/lib/domains/test_user_domain.py
