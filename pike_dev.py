@@ -101,11 +101,11 @@ def publish_create_cognito_user_event():
 
 if __name__ == "__main__":
     # Bank Manager Events
-    # for i in range(100):
-    #     account_id = publish_establish_new_account_event()
-    #
+    for i in range(100):
+        account_id = publish_establish_new_account_event()
+
     # # for i in range(20):
-    #     publish_new_transaction_event(account_id=account_id)
+        publish_new_transaction_event(account_id=account_id)
     #     time.sleep(.1)
     # User Manager Events
     # publish_new_family_event()
