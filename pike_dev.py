@@ -73,7 +73,7 @@ def publish_new_child_account_event():
         last_name='test',
         dob=datetime.datetime(year=2014, day=1, month=5),
         email='test@email.com',
-        family_id=UUID("0371f817909d42a68161275dab445ad7"),
+        family_id=UUID("3327375c-7857-4387-8076-a0e677bcc6a1"),
         grade=2
     )
 
@@ -101,15 +101,15 @@ def publish_create_cognito_user_event():
 
 if __name__ == "__main__":
     # Bank Manager Events
-    for i in range(100):
-        account_id = publish_establish_new_account_event()
-
-    # for i in range(20):
-        publish_new_transaction_event(account_id=account_id)
-        time.sleep(.1)
+    # for i in range(100):
+    #     account_id = publish_establish_new_account_event()
+    #
+    # # for i in range(20):
+    #     publish_new_transaction_event(account_id=account_id)
+    #     time.sleep(.1)
     # User Manager Events
     # publish_new_family_event()
-    # publish_new_child_account_event()
+    publish_new_child_account_event()
     # publish_family_subscription_change_event()
     # publish_create_cognito_user_event()
 

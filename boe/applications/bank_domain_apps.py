@@ -16,7 +16,7 @@ from boe.lib.domains.bank_domain import (
     BankDomainWriteModel,
     BankDomainAggregate
 )
-from boe.utils.metric_utils import BOEMetricWriter
+from boe.metrics import ServiceMetricPublisher
 from eventsourcing.application import Application
 from eventsourcing.persistence import Transcoder
 
@@ -74,7 +74,7 @@ class BankManagerApp(Application):
         super().__init__()
         self.factory = BankDomainFactory()
         self.write_model = BankDomainWriteModel()
-        self.metric_writer = BOEMetricWriter()
+        self.metric_publisher = ServiceMetricPublisher()
         self.notification_worker_client = NotificationWorkerClient()
 
         self._service_name = 'BankManagerApp'
@@ -107,10 +107,7 @@ class BankManagerApp(Application):
             event=BankAccountCreatedNotification(account_id=str(aggregate.id))
         )
 
-        self.metric_writer.publish_service_metric(
-            metric_name='EstablishNewBankAccount',
-            field_name='Success',
-            field_value=float(1),
+        self.metric_publisher.incr_bank_account_created_success_metric(
             service_name=self._service_name
         )
         return aggregate.id
@@ -135,10 +132,5 @@ class BankManagerApp(Application):
                 transaction_id=str(transaction.id)
             )
         )
-        self.metric_writer.publish_service_metric(
-            metric_name='TransActionProcessed',
-            field_name='Success',
-            field_value=float(1),
-            service_name=self._service_name
-        )
+        self.metric_publisher.incr_transaction_processed_success_metric(service_name=self._service_name)
         return aggregate.id

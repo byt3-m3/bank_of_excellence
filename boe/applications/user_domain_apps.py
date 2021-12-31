@@ -27,6 +27,7 @@ from boe.lib.domains.user_domain import (
     FamilyUserAggregate,
     UserDomainWriteModel
 )
+from boe.metrics import ServiceMetricPublisher
 from cbaxter1988_utils.aws_cognito_utils import add_new_user_basic
 from cbaxter1988_utils.log_utils import get_logger
 from eventsourcing.application import Application
@@ -204,6 +205,10 @@ class UserManagerApp(Application):
 
         )
 
+        self.metric_publisher = ServiceMetricPublisher()
+
+        self._service_name = 'UserManagerApp'
+
     def register_transcodings(self, transcoder: Transcoder):
         super().register_transcodings(transcoder)
         transcoder.register(FamilyEntityTranscoding())
@@ -254,6 +259,7 @@ class UserManagerApp(Application):
             )
         )
 
+        self.metric_publisher.incr_family_created_success_metric(service_name=self._service_name)
         return aggregate.id
 
     @handle_event.register(NewChildAccountEvent)
@@ -285,7 +291,7 @@ class UserManagerApp(Application):
 
             )
         )
-
+        self.metric_publisher.incr_child_user_account_created_success_metric(service_name=self._service_name)
         return aggregate.id
 
     @handle_event.register(NewAdultAccountEvent)
@@ -308,7 +314,7 @@ class UserManagerApp(Application):
                 is_real=False if STAGE in ['LOCAL', 'BETA'] else True
             )
         )
-
+        self.metric_publisher.incr_adult_user_account_created_success_metric(service_name=self._service_name)
         return aggregate.id
 
     @handle_event.register(FamilySubscriptionChangeEvent)
@@ -321,6 +327,11 @@ class UserManagerApp(Application):
         aggregate.change_subscription_type(subscription_type=event.subscription_type)
 
         self._save_aggregate(aggregate=aggregate)
+        if event.subscription_type == SubscriptionTypeEnum.premium:
+            self.metric_publisher.incr_family_subscription_upgrade_success_metric(service_name=self._service_name)
+
+        if event.subscription_type == SubscriptionTypeEnum.basic:
+            self.metric_publisher.incr_family_subscription_downgrade_success_metric(service_name=self._service_name)
         return aggregate.id
 
     @handle_event.register(CreateCognitoUserEvent)
@@ -331,6 +342,9 @@ class UserManagerApp(Application):
                 username=event.username,
                 user_email=event.email
             )
+            self.metric_publisher.incr_cognito_user_created_success_metric(service_name=self._service_name)
+
             logger.info(f"Successfully Processed event='{event}'")
         else:
+            self.metric_publisher.incr_mock_cognito_user_created_success_metric(service_name=self._service_name)
             logger.info(f"Received and Processed Fake Event={event}")

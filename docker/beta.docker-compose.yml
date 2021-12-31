@@ -41,16 +41,3 @@ services:
 
     command: python3 -m boe.workers.user_manager_worker
 
-  influxdb:
-    image: influxdb:latest
-    ports:
-      - '8086:8086'
-    volumes:
-      - influxdb-storage:/var/lib/influxdb
-    environment:
-      - INFLUXDB_DB=boe_metrics
-      - INFLUXDB_ADMIN_USER=boe_metric
-      - INFLUXDB_ADMIN_PASSWORD=boe_metric
-
-volumes:
-  influxdb-storage:
