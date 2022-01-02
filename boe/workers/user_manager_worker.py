@@ -19,6 +19,7 @@ from boe.env import (
 
 )
 from boe.lib.event_register import EventMapRegister
+from boe.workers.env_setup import set_up_user_manager_worker_env
 from cbaxter1988_utils.aws_cognito_utils import get_cognito_idp_client
 from cbaxter1988_utils.log_utils import get_logger
 from cbaxter1988_utils.pika_utils import make_pika_queue_consumer_v2, PikaUtilsError
@@ -83,6 +84,7 @@ def on_message_callback(ch: BlockingChannel, method: Basic.Deliver, properties: 
 
 
 def main():
+    set_up_user_manager_worker_env()
     consumer = make_pika_queue_consumer_v2(
         amqp_host=AMQP_HOST,
         amqp_password=RABBITMQ_PASSWORD,

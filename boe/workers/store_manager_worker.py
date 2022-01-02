@@ -17,6 +17,7 @@ from boe.env import (
 )
 from boe.lib.event_register import EventMapRegister
 from boe.utils.app_event_utils import register_event_map
+from boe.workers.env_setup import set_up_store_manager_worker_env
 from cbaxter1988_utils.log_utils import get_logger
 from cbaxter1988_utils.pika_utils import PikaUtilsError, make_pika_queue_consumer_v2
 from pika.adapters.blocking_connection import BlockingChannel
@@ -57,6 +58,8 @@ def on_message_callback(ch: BlockingChannel, method: Basic.Deliver, properties: 
 
 
 def main():
+    set_up_store_manager_worker_env()
+
     consumer = make_pika_queue_consumer_v2(
         amqp_host=AMQP_HOST,
         amqp_password=RABBITMQ_PASSWORD,
