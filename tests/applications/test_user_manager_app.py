@@ -31,7 +31,7 @@ def aws_cognito_mock():
 
 @fixture
 def pika_client_mock():
-    with patch("boe.applications.user_domain_apps.PikaWorkerClient", autospec=True) as client_mock:
+    with patch("boe.applications.user_domain_apps.PikaPublisherClient", autospec=True) as client_mock:
         yield client_mock
 
 
