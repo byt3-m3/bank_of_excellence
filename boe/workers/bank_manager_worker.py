@@ -10,18 +10,17 @@ from boe.applications.bank_domain_apps import (
 
 )
 from boe.env import (
-    AMQP_URL,
+    AMQP_HOST,
+    RABBITMQ_USERNAME,
+    RABBITMQ_PASSWORD,
     BANK_MANAGER_WORKER_QUEUE,
-    BANK_MANAGER_WORKER_EVENT_STORE,
-    BOE_DLQ_QUEUE,
-    BOE_DLQ_EXCHANGE,
-    BOE_DLQ_DEFAULT_ROUTING_KEY
+    BANK_MANAGER_WORKER_EVENT_STORE
 )
 from boe.lib.event_register import EventMapRegister
 from boe.utils.app_event_utils import register_event_map
 from boe.utils.metric_utils import MetricWriter
 from cbaxter1988_utils.log_utils import get_logger
-from cbaxter1988_utils.pika_utils import make_basic_pika_consumer, PikaQueueServiceWrapper, PikaUtilsError
+from cbaxter1988_utils.pika_utils import make_pika_queue_consumer_v2, PikaUtilsError
 from eventsourcing.application import AggregateNotFound
 from pika.adapters.blocking_connection import BlockingChannel
 from pika.spec import Basic, BasicProperties
@@ -79,20 +78,10 @@ def on_message_callback(ch: BlockingChannel, method: Basic.Deliver, properties: 
 
 
 def main():
-    queue_service_wrapper = PikaQueueServiceWrapper(
-        amqp_url=AMQP_URL
-    )
-
-    queue_service_wrapper.create_queue(
-        queue=BANK_MANAGER_WORKER_QUEUE,
-        dlq_support=True,
-        dlq_queue=BOE_DLQ_QUEUE,
-        dlq_exchange=BOE_DLQ_EXCHANGE,
-        dlq_routing_key=BOE_DLQ_DEFAULT_ROUTING_KEY
-    )
-
-    consumer = make_basic_pika_consumer(
-        amqp_url=AMQP_URL,
+    consumer = make_pika_queue_consumer_v2(
+        amqp_host=AMQP_HOST,
+        amqp_username=RABBITMQ_USERNAME,
+        amqp_password=RABBITMQ_PASSWORD,
         queue=BANK_MANAGER_WORKER_QUEUE,
         on_message_callback=on_message_callback,
     )
@@ -110,9 +99,9 @@ def main():
             }
         }
         register_event_map(event_map_register=event_map_register, event_map=event_map)
-        consumer.run()
+        consumer.consume(prefetch_count=1)
     except (pika.exceptions.ChannelClosedByBroker, pika.exceptions.StreamLostError, PikaUtilsError):
-        consumer.run()
+        consumer.consume(prefetch_count=1)
 
 
 if __name__ == "__main__":

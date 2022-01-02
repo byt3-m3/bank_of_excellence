@@ -1,5 +1,5 @@
 from boe.applications.persistence_domain_apps import PersistenceDomainAppEventFactory
-from boe.clients.client import PikaWorkerClient
+from boe.clients.client import PikaPublisherClient
 from boe.env import PERSISTENCE_WORKER_QUEUE, STAGE
 from boe.lib.domains.bank_domain import BankDomainAggregate
 from boe.lib.domains.user_domain import FamilyUserAggregate
@@ -7,7 +7,7 @@ from boe.utils.core_utils import extract_type
 from boe.utils.serialization_utils import serialize_object_to_dict
 
 
-class PersistenceWorkerClient(PikaWorkerClient):
+class PersistenceWorkerClient(PikaPublisherClient):
 
     def __init__(self):
         super().__init__(

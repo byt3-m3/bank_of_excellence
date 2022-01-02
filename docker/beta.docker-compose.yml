@@ -5,7 +5,7 @@ services:
     image: cbaxter1988/boe_core
     environment:
       - STAGE=BETA
-
+    restart: always
     command: python3 -m boe.api.boe_api
     ports:
       - 5000:5000
@@ -21,6 +21,7 @@ services:
     command: python3 -m boe.workers.bank_manager_worker
     env_file:
       - .env
+    restart: always
 
   store_manager_worker:
     image: cbaxter1988/boe_core
@@ -30,7 +31,7 @@ services:
     command: python3 -m boe.workers.store_manager_worker
     env_file:
       - .env
-
+    restart: always
   user_manager_worker:
     image: cbaxter1988/boe_core
     environment:
@@ -40,4 +41,4 @@ services:
       - .env
 
     command: python3 -m boe.workers.user_manager_worker
-
+    restart: always

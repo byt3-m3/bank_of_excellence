@@ -3,15 +3,15 @@ from typing import Union
 from uuid import UUID
 
 from boe.applications.user_domain_apps import UserManagerAppEventFactory, SubscriptionTypeEnum
-from boe.clients.client import PikaWorkerClient
+from boe.clients.client import PikaPublisherClient
 from boe.env import USER_MANAGER_WORKER_QUEUE, STAGE
 
 
-class UserManagerWorkerClient(PikaWorkerClient):
+class UserManagerWorkerClient(PikaPublisherClient):
 
     def __init__(self):
         super().__init__(
-            USER_MANAGER_WORKER_QUEUE,
+
             f'{STAGE}_USER_MANAGER_EXCHANGE',
             f'{STAGE}_USER_MANAGER_KEY',
 

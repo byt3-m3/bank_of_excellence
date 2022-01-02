@@ -14,7 +14,6 @@ from boe.lib.common_models import Entity
 from boe.secrets import MONGO_DB_PASSWORD, MONGO_DB_USERNAME
 from boe.utils.serialization_utils import serialize_object_to_dict
 from cbaxter1988_utils.pymongo_utils import (
-    get_client,
     get_mongo_client_w_auth,
     get_database,
     add_item,
@@ -276,42 +275,70 @@ class UserDomainWriteModel:
 
 
 class UserDomainQueryModel:
+    @dataclass(frozen=True)
+    class AdultUserAccountModel:
+        _id: str
+        first_name: str
+        last_name: str
+        email: str
+        dob: datetime
+
+    @dataclass(frozen=True)
+    class UserAccountModel:
+        _id: str
+        account_type: int
+        first_name: str
+        last_name: str
+        email: str
+        grade: int
+
+    @dataclass(frozen=True)
+    class BasicFamilyModel:
+        _id: str
+        family_name: str
+        subscription_type: SubscriptionTypeEnum
+        members: List
+        version: int
+
     def __init__(self):
-        self.client = get_client(
+        self.client = get_mongo_client_w_auth(
             db_host=MONGO_HOST,
-            db_port=MONGO_PORT
+            db_port=MONGO_PORT,
+            db_username=MONGO_DB_USERNAME,
+            db_password=MONGO_DB_PASSWORD
         )
 
         self.db = get_database(client=self.client, db_name=APP_DB)
 
-    def get_family_by_id(self, family_id: UUID) -> dict:
+    def get_family_by_id(self, family_id: UUID) -> 'UserDomainQueryModel.BasicFamilyModel':
         collection = get_collection(database=self.db, collection=FAMILY_TABLE)
 
-        cursor = list(get_item(collection=collection, item_id=family_id, item_key="id"))
+        cursor = list(get_item(collection=collection, item_id=family_id, item_key="_id"))
+        if len(cursor) == 1:
+            data_model = cursor[0]
+            family_model = self.BasicFamilyModel(
+                _id=data_model['_id'],
+                family_name=data_model['family']['name'],
+                members=[
+                    self.UserAccountModel(
+                        account_type=UserAccountTypeEnum(member_data['account_type']),
+                        first_name=member_data['first_name'],
+                        last_name=member_data['last_name'],
+                        _id=member_data['id'],
+                        email=member_data['email'],
+                        grade=member_data['grade']
 
-        if len(cursor) != 1:
+                    )
+                    for member_data in data_model['members']
+                ],
+                subscription_type=data_model['family']['subscription_type'],
+                version=data_model['version']
+            )
+            return family_model
+
+        if len(cursor) > 1:
             # TODO: Add Exception
-            print("Query Error")
-
-        return cursor[0]
-
-    def get_user_account_by_id(self, agg_id: UUID) -> dict:
-        collection = get_collection(database=self.db, collection=USER_ACCOUNT_TABLE)
-
-        cursor = list(get_item(collection=collection, item_id=agg_id, item_key="id"))
-
-        if len(cursor) != 1:
-            # TODO: Add Exception
-            print("Query Error")
-
-        return cursor[0]
-
-    def scan_user_accounts(self) -> List[dict]:
-        collection = get_collection(database=self.db, collection=USER_ACCOUNT_TABLE)
-        return list(scan_items(collection=collection))
-
-    def scan_child_accounts(self) -> List[dict]:
-        raise NotImplementedError
+            raise DuplicateKeyError(f"To Many Results Returned for {family_id}")
 
     def scan_families(self) -> List[dict]:
         collection = get_collection(database=self.db, collection=FAMILY_TABLE)

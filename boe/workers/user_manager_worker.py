@@ -11,18 +11,17 @@ from boe.applications.user_domain_apps import (
     NewFamilyEvent
 )
 from boe.env import (
-    AMQP_URL,
+    AMQP_HOST,
+    RABBITMQ_USERNAME,
+    RABBITMQ_PASSWORD,
     USER_MANAGER_WORKER_QUEUE,
-    BOE_DLQ_QUEUE,
-    BOE_DLQ_DEFAULT_ROUTING_KEY,
-    BOE_DLQ_EXCHANGE,
     USER_MANAGER_WORKER_EVENT_STORE
 
 )
 from boe.lib.event_register import EventMapRegister
 from cbaxter1988_utils.aws_cognito_utils import get_cognito_idp_client
 from cbaxter1988_utils.log_utils import get_logger
-from cbaxter1988_utils.pika_utils import PikaQueueServiceWrapper, make_basic_pika_consumer
+from cbaxter1988_utils.pika_utils import make_pika_queue_consumer_v2, PikaUtilsError
 from pika.adapters.blocking_connection import BlockingChannel
 from pika.exceptions import ChannelClosedByBroker, StreamLostError, AMQPHeartbeatTimeout
 from pika.spec import Basic, BasicProperties
@@ -84,20 +83,10 @@ def on_message_callback(ch: BlockingChannel, method: Basic.Deliver, properties: 
 
 
 def main():
-    queue_service_wrapper = PikaQueueServiceWrapper(
-        amqp_url=AMQP_URL
-    )
-
-    queue_service_wrapper.create_queue(
-        queue=USER_MANAGER_WORKER_QUEUE,
-        dlq_support=True,
-        dlq_queue=BOE_DLQ_QUEUE,
-        dlq_exchange=BOE_DLQ_EXCHANGE,
-        dlq_routing_key=BOE_DLQ_DEFAULT_ROUTING_KEY
-    )
-
-    consumer = make_basic_pika_consumer(
-        amqp_url=AMQP_URL,
+    consumer = make_pika_queue_consumer_v2(
+        amqp_host=AMQP_HOST,
+        amqp_password=RABBITMQ_PASSWORD,
+        amqp_username=RABBITMQ_USERNAME,
         queue=USER_MANAGER_WORKER_QUEUE,
         on_message_callback=on_message_callback,
     )
@@ -128,9 +117,9 @@ def main():
         }
 
         register_event_map(event_map=event_map)
-        consumer.run()
-    except (ChannelClosedByBroker, StreamLostError, AMQPHeartbeatTimeout):
-        consumer.run()
+        consumer.consume(prefetch_count=1)
+    except (ChannelClosedByBroker, StreamLostError, AMQPHeartbeatTimeout, PikaUtilsError):
+        consumer.consume(prefetch_count=1)
 
 
 if __name__ == "__main__":

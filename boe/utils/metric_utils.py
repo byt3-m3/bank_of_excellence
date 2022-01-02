@@ -12,17 +12,6 @@ org = "bits"
 bucket = "boe_metrics"
 
 
-# with InfluxDBClient(url="http://192.168.1.5:8086", token=token, org=org) as client:
-#     write_api = client.write_api(write_options=SYNCHRONOUS)
-#
-#     point = Point("mem") \
-#         .tag("host", "host1") \
-#         .field("used_percent", 23.43234543) \
-#         .time(datetime.utcnow(), WritePrecision.NS)
-#
-#     write_api.write(bucket, org, point)
-#
-
 @dataclass
 class PlatformMetricTags:
     service_name: str
