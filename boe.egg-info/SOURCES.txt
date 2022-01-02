@@ -41,6 +41,7 @@ boe/utils/serialization_utils.py
 boe/utils/validation_utils.py
 boe/workers/__init__.py
 boe/workers/bank_manager_worker.py
+boe/workers/env_setup.py
 boe/workers/persistence_service_worker.py
 boe/workers/store_manager_worker.py
 boe/workers/user_manager_worker.py
