@@ -2,6 +2,7 @@ import http
 from uuid import uuid4, UUID
 
 from boe.clients.bank_manager_worker_client import BankManagerWorkerClient
+from boe.clients.store_worker_client import StoreWorkerClient
 from boe.clients.user_manager_worker_client import UserManagerWorkerClient
 from boe.lib.domains.user_domain import UserDomainQueryModel, SubscriptionTypeEnum
 from boe.utils.validation_utils import is_isodate_format_string
@@ -190,6 +191,25 @@ def get_families():
         status=http.HTTPStatus.OK,
         payload=data
     )
+
+
+@app.route("/api/v1/family/<family_id>/store/item", methods=['POST'])
+@cross_origin()
+def add_store_item(family_id):
+    body = request.json
+
+    event_payload = body.get('NewStoreItemEvent')
+
+    store_manager_client = StoreWorkerClient()
+
+    store_manager_client.publish_new_store_item_event(
+        family_id=UUID(family_id),
+        item_name=event_payload.get("item_name"),
+        item_description=event_payload.get("item_description"),
+        item_value=event_payload.get("item_value"),
+    )
+
+    return build_json_response(status=http.HTTPStatus.OK, payload={"msg": "Store Item Submitted"})
 
 
 if __name__ == '__main__':
