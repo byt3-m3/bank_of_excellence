@@ -12,7 +12,8 @@ from cbaxter1988_utils.pymongo_utils import (
     update_item,
     get_mongo_client_w_auth,
     get_database,
-    get_collection
+    get_collection,
+    get_item
 )
 from eventsourcing.domain import Aggregate, event
 from pymongo.errors import DuplicateKeyError
@@ -129,3 +130,63 @@ class StoreDomainFactory:
             ),
             store_item_map={}
         )
+
+
+class StoreDomainQueryModel:
+    @dataclass(frozen=True)
+    class StoreItemModel:
+        item_id: UUID
+        name: str
+        value: str
+        description: str
+
+    @dataclass(frozen=True)
+    class StoreModel:
+        store_id: UUID
+        store_items: List
+
+    def __init__(self):
+        self.client = get_mongo_client_w_auth(
+            db_host=MONGO_HOST,
+            db_port=MONGO_PORT,
+            db_username=MONGO_DB_USERNAME,
+            db_password=MONGO_DB_PASSWORD
+        )
+
+        self.db = get_database(client=self.client, db_name=APP_DB)
+
+    def _build_store_models(self, records):
+        models = []
+        for record in records:
+            model = self.StoreModel(
+                store_id=record['_id'],
+                store_items=[
+                    self.StoreItemModel(
+                        item_id=UUID(item['id']),
+                        description=item['description'],
+                        name=item['name'],
+                        value=item['value'],
+                    )
+
+                    for item in record['store_item_map'].values()
+                ]
+            )
+
+            models.append(model)
+
+        return models
+
+    def get_store_by_id(self, store_id: UUID) -> StoreModel:
+        collection = get_collection(self.db, collection=STORE_TABLE)
+
+        records = list(get_item(collection, item_id=store_id))
+        print(records)
+        if len(records) == 0:
+            return
+
+        if len(records) == 1:
+            models = self._build_store_models(records=records)
+
+            print(models)
+
+            return models[0]

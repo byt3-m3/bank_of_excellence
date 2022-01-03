@@ -1,9 +1,15 @@
 from unittest.mock import patch
 
 from boe.lib.domains.store_domain import (
-    StoreDomainFactory
+    StoreDomainFactory,
+    StoreDomainQueryModel
 )
 from pytest import fixture
+from uuid import UUID
+
+@fixture
+def store_domain_query_model_testable():
+    return StoreDomainQueryModel()
 
 
 @fixture
@@ -85,3 +91,10 @@ def test_store_domain_write_model_when_saving_aggregate(store_aggregate_testable
         write_model = model_mock()
         write_model.save_store_aggregate(aggregate=store_aggregate)
         model_mock.assert_called()
+
+
+def test_query_model_when_fetching_store(store_domain_query_model_testable):
+
+    query_model = store_domain_query_model_testable
+
+    query_model.get_store_by_id(store_id=UUID("9a44e287-f167-4c41-a715-74f4a3e40bab"))
