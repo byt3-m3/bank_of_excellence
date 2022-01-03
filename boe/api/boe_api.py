@@ -57,7 +57,7 @@ def new_family():
             )
 
     except ValueError as err:
-        raise
+
         return build_json_response(status=http.HTTPStatus.EXPECTATION_FAILED, payload={
             "exception": str(err)
         })
