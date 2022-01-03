@@ -6,7 +6,8 @@ services:
     image: cbaxter1988/boe_core
 
     command: python3 -m boe.workers.env_setup
-
+    env_file:
+      - .env
 
   boe_api:
     image: cbaxter1988/boe_core
@@ -15,7 +16,8 @@ services:
     ports:
       - 5000:5000
 
-
+    env_file:
+      - .env
 
     depends_on:
       - env_builder
@@ -26,7 +28,8 @@ services:
       - BANK_MANAGER_WORKER_EVENT_STORE=event_store.sqllite
 
     command: python3 -m boe.workers.bank_manager_worker
-
+    env_file:
+      - .env
 
     depends_on:
       - env_builder
@@ -37,7 +40,8 @@ services:
       - STORE_MANAGER_WORKER_EVENT_STORE=event_store.sqllite
 
     command: python3 -m boe.workers.store_manager_worker
-
+    env_file:
+      - .env
     depends_on:
       - env_builder
 
@@ -46,7 +50,8 @@ services:
     environment:
       - USER_MANAGER_WORKER_EVENT_STORE=event_store.sqllite
 
-
+    env_file:
+      - .env
     command: python3 -m boe.workers.user_manager_worker
     depends_on:
       - env_builder
