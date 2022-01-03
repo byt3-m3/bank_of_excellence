@@ -1,13 +1,28 @@
 import datetime
-import time
 from uuid import UUID
 from uuid import uuid4
 
 from boe.clients.bank_manager_worker_client import BankManagerWorkerClient
+from boe.clients.store_worker_client import StoreWorkerClient
 from boe.clients.user_manager_worker_client import UserManagerWorkerClient, SubscriptionTypeEnum
-from boe.env import AMQP_URL, STORE_MANAGER_WORKER_QUEUE
 from boe.lib.domains.bank_domain import BankTransactionMethodEnum
-from cbaxter1988_utils.pika_utils import make_basic_pika_publisher
+
+store_manager_client = StoreWorkerClient()
+
+
+def publish_new_store_event():
+    store_manager_client.publish_new_store_event(
+        family_id=uuid4()
+    )
+
+
+def publish_new_store_item_event():
+    store_manager_client.publish_new_store_item_event(
+        family_id=UUID('1ae0e437-4183-4919-a9e4-c0b0ac2cf2ca'),
+        item_name='Test Item',
+        item_value=5.00,
+        item_description='This is just a test item'
+    )
 
 
 def publish_establish_new_account_event():
@@ -31,8 +46,6 @@ def publish_new_transaction_event(account_id):
         transaction_method=BankTransactionMethodEnum.add,
         value=5
     )
-
-
 
 
 def publish_new_family_event():
@@ -86,16 +99,21 @@ def publish_create_cognito_user_event():
 
 if __name__ == "__main__":
     # Bank Manager Events
-    for i in range(100):
-        account_id = publish_establish_new_account_event()
-        publish_new_transaction_event(account_id=account_id)
+    # for i in range(100):
+    #     account_id = publish_establish_new_account_event()
+    #     publish_new_transaction_event(account_id=account_id)
     #     time.sleep(.1)
     # User Manager Events
-    for i in range(5):
-        publish_new_family_event()
+    # for i in range(5):
+    #     publish_new_family_event()
     # publish_new_child_account_event()
     # publish_family_subscription_change_event()
     # publish_create_cognito_user_event()
 
     # Store Manager Events
-    #     publish_new_store_event()
+
+    # publish_new_family_event()
+    # account_id = publish_establish_new_account_event()
+    # publish_new_transaction_event(account_id=account_id)
+    publish_new_store_event()
+    # publish_new_store_item_event()
