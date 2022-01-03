@@ -1,11 +1,18 @@
 from unittest.mock import patch
 
+import pytest
 from boe.lib.domains.store_domain import (
     StoreDomainFactory,
     StoreDomainQueryModel
 )
 from pytest import fixture
 from uuid import UUID
+
+
+@fixture
+def mongo_client_mock():
+    with patch("boe.lib.domains.store_domain.get_mongo_client_w_auth", autospec=True) as client_mock:
+        yield client_mock
 
 @fixture
 def store_domain_query_model_testable():
@@ -93,8 +100,10 @@ def test_store_domain_write_model_when_saving_aggregate(store_aggregate_testable
         model_mock.assert_called()
 
 
-def test_query_model_when_fetching_store(store_domain_query_model_testable):
+def test_query_model_when_fetching_store_fails(mongo_client_mock, store_domain_query_model_testable):
 
     query_model = store_domain_query_model_testable
+    with pytest.raises(ValueError):
+        query_model.get_store_by_id(store_id=UUID("9a44e287-f167-4c41-a715-74f4a3e40bab"))
 
-    query_model.get_store_by_id(store_id=UUID("9a44e287-f167-4c41-a715-74f4a3e40bab"))
+    mongo_client_mock.assert_called()
