@@ -1,6 +1,6 @@
 from boe.applications.persistence_domain_apps import PersistenceDomainAppEventFactory
 from boe.clients.client import PikaPublisherClient
-from boe.env import PERSISTENCE_WORKER_QUEUE, STAGE
+from boe.env import BOE_APP_EXCHANGE, PERSISTENCE_QUEUE_ROUTING_KEY
 from boe.lib.domains.bank_domain import BankDomainAggregate
 from boe.lib.domains.user_domain import FamilyUserAggregate
 from boe.utils.core_utils import extract_type
@@ -11,9 +11,8 @@ class PersistenceWorkerClient(PikaPublisherClient):
 
     def __init__(self):
         super().__init__(
-            PERSISTENCE_WORKER_QUEUE,
-            f"{STAGE}_PERSISTENCE_WORKER_EXCHANGE",
-            f"{STAGE}_PERSISTENCE_WORKER_KEY"
+            BOE_APP_EXCHANGE,
+            PERSISTENCE_QUEUE_ROUTING_KEY
         )
         self.app_event_factory = PersistenceDomainAppEventFactory()
 

@@ -30,7 +30,7 @@ from pika.spec import Basic, BasicProperties
 INFRASTRUCTURE_FACTORY = "eventsourcing.sqlite:Factory"
 SQLITE_DBNAME = USER_MANAGER_WORKER_EVENT_STORE
 
-os.environ['INFRASTRUCTUREADDASDWED_FACTORY'] = INFRASTRUCTURE_FACTORY
+os.environ['INFRASTRUCTURE_FACTORY'] = INFRASTRUCTURE_FACTORY
 os.environ['SQLITE_DBNAME'] = SQLITE_DBNAME
 
 logger = get_logger('UserManagerWorker')

@@ -180,14 +180,15 @@ class FamilyUserAggregate(Aggregate):
         )
 
     @event
-    def create_new_adult_member(self, email: str, first_name: str, last_name: str, dob: datetime):
+    def create_new_adult_member(self, email: str, first_name: str, last_name: str, dob: datetime, _id: UUID = None):
         account = UserDomainFactory.build_user_account(
             email=email,
             first_name=first_name,
             last_name=last_name,
             account_type=UserAccountTypeEnum.adult,
             family_id=self.id,
-            dob=dob
+            dob=dob,
+            _id=_id
         )
         self._add_family_member(user_account=account)
 
@@ -198,7 +199,8 @@ class FamilyUserAggregate(Aggregate):
             first_name: str,
             last_name: str,
             dob: datetime,
-            grade: int
+            grade: int,
+            _id: UUID = None
     ):
         account = UserDomainFactory.build_user_account(
             email=email,
@@ -207,7 +209,8 @@ class FamilyUserAggregate(Aggregate):
             dob=dob,
             grade=grade,
             account_type=UserAccountTypeEnum.child,
-            family_id=self.family.id
+            family_id=self.family.id,
+            _id=_id
         )
         self._add_family_member(user_account=account)
 
@@ -340,9 +343,40 @@ class UserDomainQueryModel:
             # TODO: Add Exception
             raise DuplicateKeyError(f"To Many Results Returned for {family_id}")
 
-    def scan_families(self) -> List[dict]:
+    def scan_families(self) -> List['UserDomainQueryModel.BasicFamilyModel']:
         collection = get_collection(database=self.db, collection=FAMILY_TABLE)
-        return list(scan_items(collection=collection))
+        items = list(scan_items(collection=collection))
+        families = []
+        for data_model in items:
+            family_model = self.BasicFamilyModel(
+                _id=data_model['_id'],
+                family_name=data_model['family']['name'],
+                members=[
+                    self.UserAccountModel(
+                        account_type=UserAccountTypeEnum(member_data['account_type']),
+                        first_name=member_data['first_name'],
+                        last_name=member_data['last_name'],
+                        _id=member_data['id'],
+                        email=member_data['email'],
+                        grade=member_data['grade']
+
+                    )
+                    for member_data in data_model['members']
+                ],
+                subscription_type=data_model['family']['subscription_type'],
+                version=data_model['version']
+            )
+            families.append(family_model)
+
+        return families
+
+    def get_user_account(self, family_id: UUID, user_account_id: UUID) -> 'UserDomainQueryModel.UserAccountModel':
+        family = self.get_family_by_id(family_id=family_id)
+
+        for member in family.members:
+
+            if member._id == str(user_account_id):
+                return member
 
 
 class UserDomainFactory:
@@ -381,15 +415,22 @@ class UserDomainFactory:
             name: str,
             subscription_type: SubscriptionTypeEnum,
             members: List[UserAccount] = None,
+            family_id: str = None,
             **kwargs
 
     ):
+        if family_id:
+            if isinstance(family_id, str):
+                family_id = UUID(family_id)
+        else:
+            family_id = uuid4()
+
         return FamilyUserAggregate.create(
             description=description,
             name=name,
             subscription_type=subscription_type,
             members=members,
-            id=UUID(kwargs.get("id", str(uuid4())))
+            id=family_id
         )
 
     @staticmethod
@@ -400,7 +441,8 @@ class UserDomainFactory:
             last_name: str,
             email: str,
             family_id: UUID,
-            grade: int = 0
+            grade: int = 0,
+            _id: UUID = None
     ) -> UserAccount:
         return UserAccount(
             account_type=UserAccountTypeEnum(account_type),
@@ -410,7 +452,7 @@ class UserDomainFactory:
             email=email,
             family_id=family_id,
             grade=grade,
-            id=uuid4()
+            id=uuid4() if _id is None else _id
 
         )
 

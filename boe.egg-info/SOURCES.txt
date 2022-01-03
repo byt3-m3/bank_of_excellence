@@ -15,8 +15,6 @@ boe/applications/persistence_domain_apps.py
 boe/applications/store_domain_apps.py
 boe/applications/transcodings.py
 boe/applications/user_domain_apps.py
-boe/bin/__init__.py
-boe/bin/queue_setup.py
 boe/clients/__init__.py
 boe/clients/bank_manager_worker_client.py
 boe/clients/client.py

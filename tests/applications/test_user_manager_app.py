@@ -66,7 +66,7 @@ def new_child_account_event(family_uuid):
 
 
 @fixture
-def new_family_app_event_basic():
+def new_family_app_event_basic(family_uuid):
     return UserManagerAppEventFactory.build_new_family_event(
         description='TEST_DESCRIPTION',
         name='TEST_NAME',
@@ -74,7 +74,8 @@ def new_family_app_event_basic():
         first_name='test_firstname',
         last_name='test_lastname',
         email='test_lastname',
-        dob=datetime.datetime(month=9, day=6, year=1988).isoformat()
+        dob=datetime.datetime(month=9, day=6, year=1988).isoformat(),
+        family_id=str(family_uuid)
 
     )
 

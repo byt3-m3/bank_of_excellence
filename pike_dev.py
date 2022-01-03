@@ -33,21 +33,6 @@ def publish_new_transaction_event(account_id):
     )
 
 
-def publish_new_store_event():
-    publisher = make_basic_pika_publisher(
-        amqp_url=AMQP_URL,
-        queue=STORE_MANAGER_WORKER_QUEUE,
-        exchange="STORE_MANAGER_EXCHANGE",
-        routing_key="STORE_MANAGER__KEY"
-    )
-
-    publisher.publish_message(
-        body={
-            "NewStoreEvent": {
-                "family_id": str(uuid4())
-            }
-        }
-    )
 
 
 def publish_new_family_event():

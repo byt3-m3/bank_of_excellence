@@ -1,13 +1,13 @@
+import uuid
 from dataclasses import dataclass
 from datetime import datetime
 from functools import singledispatchmethod
 from typing import Union
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from boe.applications.store_domain_apps import StoreManagerAppEventFactory
 from boe.applications.transcodings import (
     FamilyEntityTranscoding,
-
     SubscriptionTypeEnumTranscoding,
     UserAccountTypeEnumTranscoding,
 
@@ -16,7 +16,11 @@ from boe.clients.client import PikaPublisherClient
 from boe.clients.notification_worker_client import NotificationWorkerClient
 from boe.env import (
     COGNITO_POOL_ID,
-    STAGE
+    STAGE,
+    BOE_APP_EXCHANGE,
+    USER_MANAGER_QUEUE_ROUTING_KEY,
+    STORE_MANAGER_QUEUE_ROUTING_KEY
+
 )
 from boe.lib.common_models import AppEvent, AppNotification
 from boe.lib.domains.user_domain import (
@@ -43,7 +47,7 @@ class NewFamilyEvent(AppEvent):
     last_name: str
     dob: datetime
     email: str
-    id: UUID = None
+    family_id: UUID = None
 
 
 @dataclass(frozen=True)
@@ -54,11 +58,13 @@ class NewChildAccountEvent(AppEvent):
     dob: datetime
     grade: int
     email: str
+    child_id: UUID = None
 
 
 @dataclass(frozen=True)
 class NewAdultAccountEvent(AppEvent):
     family_id: UUID
+    adult_id: UUID
     first_name: str
     last_name: str
     dob: datetime
@@ -100,9 +106,13 @@ class UserManagerAppEventFactory:
             email: str,
             dob: str,
             subscription_type: Union[SubscriptionTypeEnum, int] = SubscriptionTypeEnum.basic,
-            **kwargs
+            family_id: str = None
 
     ):
+
+        if family_id:
+            family_id = UUID(family_id)
+
         return NewFamilyEvent(
             description=description,
             name=name,
@@ -111,7 +121,7 @@ class UserManagerAppEventFactory:
             last_name=last_name,
             email=email,
             dob=datetime.fromisoformat(dob),
-            id=UUID(kwargs.get("id", str(uuid4())))
+            family_id=family_id
         )
 
     @staticmethod
@@ -121,8 +131,12 @@ class UserManagerAppEventFactory:
             last_name: str,
             first_name: str,
             email: str,
-            grade: int
+            grade: int,
+            child_id: str = None
     ):
+        if child_id:
+            child_id = UUID(child_id)
+
         return NewChildAccountEvent(
             family_id=UUID(family_id),
             dob=dob,
@@ -130,11 +144,13 @@ class UserManagerAppEventFactory:
             first_name=first_name,
             email=email,
             grade=grade,
+            child_id=child_id
         )
 
     @staticmethod
     def build_new_adult_account_event(
             family_id: str,
+            adult_id: str,
             dob: datetime,
             last_name: str,
             first_name: str,
@@ -146,6 +162,7 @@ class UserManagerAppEventFactory:
             last_name=last_name,
             first_name=first_name,
             email=email,
+            adult_id=UUID(adult_id)
         )
 
     @staticmethod
@@ -190,14 +207,14 @@ class UserManagerApp(Application):
         self.notification_service_client = NotificationWorkerClient()
         self.write_model = UserDomainWriteModel()
         self.user_manager_pika_client = PikaPublisherClient(
-            worker_exchange=f'{STAGE}_USER_MANAGER_EXCHANGE',
-            worker_routing_key=f'{STAGE}_USER_MANAGER_KEY',
+            worker_exchange=BOE_APP_EXCHANGE,
+            worker_routing_key=USER_MANAGER_QUEUE_ROUTING_KEY,
 
         )
 
         self.store_manager_pika_client = PikaPublisherClient(
-            worker_exchange=f'{STAGE}_STORE_MANAGER_EXCHANGE',
-            worker_routing_key=f'{STAGE}_STORE_MANAGER_KEY',
+            worker_exchange=BOE_APP_EXCHANGE,
+            worker_routing_key=STORE_MANAGER_QUEUE_ROUTING_KEY,
 
         )
 
@@ -233,7 +250,7 @@ class UserManagerApp(Application):
             description=event.description,
             name=event.name,
             subscription_type=event.subscription_type,
-            id=str(event.id)
+            family_id=str(event.family_id)
         )
 
         self._save_aggregate(aggregate=aggregate)
@@ -244,7 +261,8 @@ class UserManagerApp(Application):
                 last_name=event.last_name,
                 first_name=event.first_name,
                 email=event.email,
-                dob=event.dob
+                dob=event.dob,
+                adult_id=str(uuid.uuid4())
             )
         )
 
@@ -268,6 +286,7 @@ class UserManagerApp(Application):
             first_name=event.first_name,
             last_name=event.last_name,
             grade=event.grade,
+            _id=event.child_id
         )
         child_account = aggregate.members[len(aggregate.members) - 1]
 
@@ -299,6 +318,7 @@ class UserManagerApp(Application):
             email=event.email,
             first_name=event.first_name,
             last_name=event.last_name,
+            _id=event.adult_id
         )
 
         self._save_aggregate(aggregate=aggregate)

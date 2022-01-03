@@ -4,7 +4,7 @@ from uuid import UUID
 
 from boe.applications.user_domain_apps import UserManagerAppEventFactory, SubscriptionTypeEnum
 from boe.clients.client import PikaPublisherClient
-from boe.env import USER_MANAGER_WORKER_QUEUE, STAGE
+from boe.env import BOE_APP_EXCHANGE, USER_MANAGER_QUEUE_ROUTING_KEY
 
 
 class UserManagerWorkerClient(PikaPublisherClient):
@@ -12,8 +12,8 @@ class UserManagerWorkerClient(PikaPublisherClient):
     def __init__(self):
         super().__init__(
 
-            f'{STAGE}_USER_MANAGER_EXCHANGE',
-            f'{STAGE}_USER_MANAGER_KEY',
+            BOE_APP_EXCHANGE,
+            USER_MANAGER_QUEUE_ROUTING_KEY,
 
         )
         self.event_factory = UserManagerAppEventFactory()
@@ -37,7 +37,7 @@ class UserManagerWorkerClient(PikaPublisherClient):
             last_name=last_name,
             dob=dob.isoformat() if isinstance(dob, datetime.datetime) else dob,
             email=email,
-            id=id
+            family_id=id
         )
         return self.publish_event(event=event)
 
@@ -48,7 +48,9 @@ class UserManagerWorkerClient(PikaPublisherClient):
             email: str,
             grade: int,
             dob: datetime.datetime,
-            family_id: UUID
+            family_id: UUID,
+            child_id: UUID
+
     ):
         event = self.event_factory.build_new_child_account_event(
             dob=dob,
@@ -56,7 +58,9 @@ class UserManagerWorkerClient(PikaPublisherClient):
             family_id=str(family_id),
             first_name=first_name,
             last_name=last_name,
-            grade=grade
+            grade=grade,
+            child_id=str(child_id)
+
         )
 
         self.publish_event(event=event)
@@ -89,14 +93,16 @@ class UserManagerWorkerClient(PikaPublisherClient):
             last_name: str,
             email: str,
             dob: datetime.datetime,
-            family_id: UUID
+            family_id: UUID,
+            adult_id: UUID
     ):
         event = self.event_factory.build_new_adult_account_event(
             email=email,
             family_id=str(family_id),
             first_name=first_name,
             last_name=last_name,
-            dob=dob
+            dob=dob,
+            adult_id=str(adult_id)
         )
 
         self.publish_event(event=event)

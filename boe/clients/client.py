@@ -2,7 +2,7 @@ import json
 from typing import Union
 
 import pika
-from boe.env import AMQP_HOST, RABBITMQ_PASSWORD, RABBITMQ_USERNAME
+from boe.env import AMQP_HOST, RABBITMQ_PASSWORD, RABBITMQ_USERNAME, BOE_APP_EXCHANGE
 from boe.lib.common_models import AppEvent, AppNotification
 from boe.utils.core_utils import extract_type
 from boe.utils.serialization_utils import serialize_object
@@ -18,7 +18,7 @@ class PikaPublisherClient:
 
         )
 
-        self.exchange = worker_exchange
+        self.exchange = BOE_APP_EXCHANGE
         self.routing_key = worker_routing_key
 
     def publish_event(self, event: Union[AppEvent, AppNotification], properties: pika.BasicProperties = None):
