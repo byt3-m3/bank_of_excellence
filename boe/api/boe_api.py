@@ -4,6 +4,7 @@ from uuid import uuid4, UUID
 from boe.clients.bank_manager_worker_client import BankManagerWorkerClient
 from boe.clients.store_worker_client import StoreWorkerClient
 from boe.clients.user_manager_worker_client import UserManagerWorkerClient
+from boe.lib.domains.store_domain import StoreDomainQueryModel
 from boe.lib.domains.user_domain import UserDomainQueryModel, SubscriptionTypeEnum
 from boe.utils.validation_utils import is_isodate_format_string
 from cbaxter1988_utils.flask_utils import build_json_response
@@ -210,6 +211,20 @@ def add_store_item(family_id):
     )
 
     return build_json_response(status=http.HTTPStatus.OK, payload={"msg": "Store Item Submitted"})
+
+
+@app.route("/api/v1/family/<family_id>/store", methods=['GET'])
+@cross_origin()
+def get_store(family_id):
+    query_model = StoreDomainQueryModel()
+
+    store_model = query_model.get_store_by_id(store_id=UUID(family_id))
+    if store_model is None:
+        return build_json_response(
+            status=http.HTTPStatus.EXPECTATION_FAILED,
+            payload={"msg": f"Store '{family_id}' not found"}
+        )
+    return build_json_response(status=http.HTTPStatus.OK, payload=serialize_object(store_model))
 
 
 if __name__ == '__main__':
