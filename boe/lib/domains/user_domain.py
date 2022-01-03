@@ -13,6 +13,7 @@ from boe.env import (
 from boe.lib.common_models import Entity
 from boe.secrets import MONGO_DB_PASSWORD, MONGO_DB_USERNAME
 from boe.utils.serialization_utils import serialize_object_to_dict
+from bson.binary import Binary, UuidRepresentation
 from cbaxter1988_utils.pymongo_utils import (
     get_mongo_client_w_auth,
     get_database,
@@ -267,14 +268,14 @@ class UserDomainWriteModel:
         serialized_aggregate = serialize_object_to_dict(aggregate)
 
         family_collection = get_collection(database=self.db, collection=FAMILY_TABLE)
-
-        serialized_aggregate['_id'] = aggregate.id
+        _record_id = Binary.from_uuid(aggregate.id, uuid_representation=UuidRepresentation.STANDARD)
+        serialized_aggregate['_id'] = _record_id
         serialized_aggregate['version'] = aggregate.version
 
         try:
             add_item(item=serialized_aggregate, collection=family_collection, key_id='_id')
         except DuplicateKeyError:
-            update_item(new_values=serialized_aggregate, item_id=aggregate.id, collection=family_collection)
+            update_item(new_values=serialized_aggregate, item_id=_record_id, collection=family_collection)
 
 
 class UserDomainQueryModel:

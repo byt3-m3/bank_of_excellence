@@ -24,7 +24,7 @@ from cbaxter1988_utils.pymongo_utils import (
 )
 from eventsourcing.domain import Aggregate, event
 from pymongo.errors import DuplicateKeyError
-
+from bson.binary import Binary, UuidRepresentation
 
 class BankAccountStateEnum(Enum):
     enabled = 0
@@ -275,16 +275,18 @@ class BankDomainWriteModel:
 
         item_data = serialize_object_to_dict(o=aggregate)
 
-        item_data['id'] = aggregate.id
+        _record_id = Binary.from_uuid(aggregate.id, uuid_representation=UuidRepresentation.STANDARD)
+        item_data['_id'] = _record_id
+
         try:
 
-            add_item(collection=collection, item=item_data, key_id='id')
+            add_item(collection=collection, item=item_data)
             return aggregate.id
 
         except DuplicateKeyError:
             update_item(
                 collection=collection,
-                item_id=aggregate.id,
+                item_id=_record_id,
                 new_values=item_data
             )
 

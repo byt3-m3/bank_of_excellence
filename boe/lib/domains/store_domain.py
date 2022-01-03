@@ -6,6 +6,7 @@ from boe.env import MONGO_HOST, MONGO_PORT, APP_DB, STORE_TABLE
 from boe.lib.common_models import Entity
 from boe.secrets import MONGO_DB_USERNAME, MONGO_DB_PASSWORD
 from boe.utils.serialization_utils import serialize_object_to_dict
+from bson.binary import Binary, UuidRepresentation
 from cbaxter1988_utils.pymongo_utils import (
     add_item,
     update_item,
@@ -88,17 +89,15 @@ class StoreDomainWriteModel:
     def save_store_aggregate(self, aggregate: StoreAggregate):
         collection = get_collection(database=self.db, collection=STORE_TABLE)
 
-        model = StoreTableModel(
-            store_id=aggregate.id,
-            store_items=aggregate.store_items
-        )
         serialized_data = serialize_object_to_dict(o=aggregate)
-        serialized_data['id'] = aggregate.id
+        _record_id = Binary.from_uuid(aggregate.id, uuid_representation=UuidRepresentation.STANDARD)
+
+        serialized_data['_id'] = _record_id
 
         try:
-            add_item(collection=collection, item=serialized_data, key_id='id')
+            add_item(collection=collection, item=serialized_data)
         except DuplicateKeyError:
-            update_item(collection=collection, item_id=aggregate.id, new_values=serialized_data)
+            update_item(collection=collection, item_id=_record_id, new_values=serialized_data)
 
 
 class StoreDomainFactory:

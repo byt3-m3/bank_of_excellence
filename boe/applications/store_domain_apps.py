@@ -87,6 +87,7 @@ class StoreManagerApp(Application):
         transcoder.register(StoreItemEntityTranscoding())
 
     def _save_aggregate(self, aggregate: StoreAggregate):
+
         self.save(aggregate)
         self.write_model.save_store_aggregate(
             aggregate=aggregate
