@@ -12,6 +12,12 @@ from pytest import fixture
 
 
 @fixture
+def metric_publisher_mock():
+    with patch("boe.applications.user_domain_apps.ServiceMetricPublisher") as client_mock:
+        yield client_mock
+
+
+@fixture
 def write_model_mock():
     with patch("boe.applications.user_domain_apps.UserDomainWriteModel") as client_mock:
         yield client_mock
@@ -92,6 +98,7 @@ def new_family_app_event_premium():
 
 
 def test_user_manager_app_when_handling_new_family_app_event(
+        metric_publisher_mock,
         notification_worker_client_mock,
         pika_client_mock,
         write_model_mock,
@@ -107,9 +114,11 @@ def test_user_manager_app_when_handling_new_family_app_event(
     write_model_mock.assert_called()
     notification_worker_client_mock.assert_called()
     pika_client_mock.assert_called()
+    metric_publisher_mock.assert_called()
 
 
 def test_user_manager_app_when_handling_new_child_account_event(
+        metric_publisher_mock,
         pika_client_mock,
         notification_worker_client_mock,
         write_model_mock,
@@ -134,9 +143,11 @@ def test_user_manager_app_when_handling_new_child_account_event(
     pika_client_mock.assert_called()
     write_model_mock.assert_called()
     notification_worker_client_mock.assert_called()
+    metric_publisher_mock.assert_called()
 
 
 def test_user_manager_app_when_handling_family_subscription_change_event(
+        metric_publisher_mock,
         notification_worker_client_mock,
         pika_client_mock,
         write_model_mock,
@@ -158,3 +169,4 @@ def test_user_manager_app_when_handling_family_subscription_change_event(
     write_model_mock.assert_called()
     notification_worker_client_mock.assert_called()
     pika_client_mock.assert_called()
+    metric_publisher_mock.assert_called()

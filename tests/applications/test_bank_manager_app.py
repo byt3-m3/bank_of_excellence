@@ -14,6 +14,12 @@ from pytest import fixture
 
 
 @fixture
+def metric_publisher_mock():
+    with patch("boe.applications.bank_domain_apps.ServiceMetricPublisher") as client_mock:
+        yield client_mock
+
+
+@fixture
 def write_model_mock():
     with patch("boe.applications.bank_domain_apps.BankDomainWriteModel") as client_mock:
         yield client_mock
@@ -45,6 +51,7 @@ def _test_basic_test(bank_manager_app_testable):
 
 
 def test_bank_manager_app_when_handle_establish_new_account_event(
+        metric_publisher_mock,
         write_model_mock,
         notification_worker_client_mock,
         bank_manager_app_testable,
@@ -58,9 +65,11 @@ def test_bank_manager_app_when_handle_establish_new_account_event(
     assert isinstance(aggregate, BankDomainAggregate)
     write_model_mock.assert_called()
     notification_worker_client_mock.assert_called()
+    metric_publisher_mock.assert_called()
 
 
 def test_bank_manager_app_when_handling_new_transaction_event(
+        metric_publisher_mock,
         write_model_mock,
         notification_worker_client_mock,
         bank_manager_app_testable,
@@ -84,3 +93,4 @@ def test_bank_manager_app_when_handling_new_transaction_event(
     assert aggregate.bank_account.balance == 6
     write_model_mock.assert_called()
     notification_worker_client_mock.assert_called()
+    metric_publisher_mock.assert_called()

@@ -6,6 +6,13 @@ from pytest import fixture
 
 
 @fixture
+def metric_publisher_mock():
+    pass
+    with patch("boe.applications.store_domain_apps.ServiceMetricPublisher") as write_model_mock:
+        yield write_model_mock
+
+
+@fixture
 def store_domain_write_model_mock():
     pass
     with patch("boe.applications.store_domain_apps.StoreDomainWriteModel") as write_model_mock:
@@ -25,6 +32,7 @@ def new_store_event():
 
 
 def test_store_manager_app_when_handling_new_store_event(
+        metric_publisher_mock,
         store_domain_write_model_mock,
         store_manager_app_testable,
         new_store_event
@@ -34,9 +42,11 @@ def test_store_manager_app_when_handling_new_store_event(
 
     app.handle_event(event)
     store_domain_write_model_mock.assert_called()
+    metric_publisher_mock.assert_called()
 
 
 def test_store_manager_app_when_handling_new_store_item_event(
+        metric_publisher_mock,
         store_domain_write_model_mock,
         store_manager_app_testable,
         new_store_event
@@ -53,9 +63,11 @@ def test_store_manager_app_when_handling_new_store_item_event(
 
     app.handle_event(new_store_item_event)
     store_domain_write_model_mock.assert_called()
+    metric_publisher_mock.assert_called()
 
 
 def test_store_manager_app_when_handling_remove_store_item_event(
+        metric_publisher_mock,
         store_domain_write_model_mock,
         store_manager_app_testable,
         new_store_event
@@ -86,3 +98,4 @@ def test_store_manager_app_when_handling_remove_store_item_event(
     assert len(store.store_item_ids) == 0
 
     store_domain_write_model_mock.assert_called()
+    metric_publisher_mock.assert_called()
