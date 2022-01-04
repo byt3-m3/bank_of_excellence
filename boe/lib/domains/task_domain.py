@@ -18,6 +18,7 @@ from cbaxter1988_utils.pymongo_utils import (
     get_mongo_client_w_auth,
     get_database,
     add_item,
+    query_items,
     update_item,
     get_collection
 )
@@ -143,3 +144,47 @@ class TaskDomainWriteModel:
             add_item(item=serialized_aggregate, collection=collection, key_id='_id')
         except DuplicateKeyError:
             update_item(new_values=serialized_aggregate, item_id=aggregate.id, collection=collection)
+
+
+class TaskDomainQueryModel:
+    @dataclass(frozen=True)
+    class TaskModel:
+        task_id: UUID
+        owner_id: UUID
+        due_date: datetime
+        created: datetime
+        value: float
+        is_validated: bool
+        status: TaskStatusEnum
+
+    def __init__(self):
+        self.client = get_mongo_client_w_auth(
+            db_host=MONGO_HOST,
+            db_port=MONGO_PORT,
+            db_password=MONGO_DB_PASSWORD,
+            db_username=MONGO_DB_USERNAME
+        )
+
+        self.db = get_database(client=self.client, db_name=APP_DB)
+
+    def get_tasks_by_owner_id(self, owner_id: UUID):
+        collection = get_collection(database=self.db, collection=TASK_TABLE)
+        results = list(query_items(collection=collection, query={"task.owner_id": str(owner_id)}))
+
+        return [
+            self.TaskModel(
+                owner_id=task_data['task']["owner_id"],
+                created=datetime.fromisoformat(task_data['task']["created"]) if isinstance(task_data['task']["created"],
+                                                                                           str) else task_data['task'][
+                    "created"],
+                due_date=datetime.fromisoformat(task_data['task']["due_date"]) if isinstance(
+                    task_data['task']["due_date"],
+                    str) else task_data['task']["due_date"],
+                is_validated=task_data['task']["is_validated"],
+                status=TaskStatusEnum(task_data['task']["status"]),
+                task_id=task_data['_id'],
+                value=task_data['task']["value"],
+            )
+
+            for task_data in results
+        ]
