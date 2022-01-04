@@ -12,7 +12,7 @@ from cbaxter1988_utils.log_utils import get_logger
 from cbaxter1988_utils.serialization_utils import serialize_object
 from flask import Flask, request
 from flask_cors import CORS, cross_origin
-
+from boe.env import API_LISTEN_PORT
 logger = get_logger("BOE_API")
 
 app = Flask(__name__)
@@ -234,4 +234,4 @@ def store_events(family_id):
 
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=API_LISTEN_PORT)

@@ -4,6 +4,7 @@ from boe.secrets import RABBITMQ_USERNAME, RABBITMQ_PASSWORD
 
 # Core Vars
 STAGE = os.getenv("STAGE", "LOCAL")
+API_LISTEN_PORT = os.getenv("API_LISTEN_PORT", 5000)
 
 # MongoDB Vars
 MONGO_HOST = os.getenv("MONGO_HOST", "192.168.1.5")
