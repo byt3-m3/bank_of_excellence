@@ -7,6 +7,7 @@ from boe.clients.task_manager_client import TaskManagerWorkerClient
 from boe.clients.user_manager_worker_client import UserManagerWorkerClient
 from boe.env import API_LISTEN_PORT
 from boe.lib.domains.store_domain import StoreDomainQueryModel
+from boe.lib.domains.task_domain import TaskDomainQueryModel
 from boe.lib.domains.user_domain import UserDomainQueryModel, SubscriptionTypeEnum
 from boe.utils.validation_utils import is_isodate_format_string
 from cbaxter1988_utils.flask_utils import build_json_response
@@ -261,6 +262,16 @@ def task_events(family_id):
             )
 
             return build_json_response(status=http.HTTPStatus.OK, payload={"msg": "task created"})
+
+
+@app.route("/api/v1/family/<family_id>/child/<child_id>/tasks", methods=['GET'])
+@cross_origin()
+def get_child_task(family_id, child_id):
+    query_model = TaskDomainQueryModel()
+
+    results = query_model.get_tasks_by_owner_id(owner_id=UUID(child_id))
+    return build_json_response(status=http.HTTPStatus.OK, payload=serialize_object(results))
+
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=API_LISTEN_PORT)
