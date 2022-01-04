@@ -4,3 +4,4 @@
 venv
 _db
 .env
+.pyenv
