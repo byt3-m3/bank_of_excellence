@@ -55,3 +55,13 @@ services:
     command: python3 -m boe.workers.user_manager_worker
     depends_on:
       - env_builder
+
+  task_manager_worker:
+    image: cbaxter1988/boe_core
+    environment:
+      - USER_MANAGER_WORKER_EVENT_STORE=event_store.sqllite
+      - STAGE=BETA
+    env_file:
+      - .env
+
+    command: python3 -m boe.workers.task_manager_worker
