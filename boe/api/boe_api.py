@@ -3,7 +3,9 @@ from uuid import uuid4, UUID
 
 from boe.clients.bank_manager_worker_client import BankManagerWorkerClient
 from boe.clients.store_worker_client import StoreWorkerClient
+from boe.clients.task_manager_client import TaskManagerWorkerClient
 from boe.clients.user_manager_worker_client import UserManagerWorkerClient
+from boe.env import API_LISTEN_PORT
 from boe.lib.domains.store_domain import StoreDomainQueryModel
 from boe.lib.domains.user_domain import UserDomainQueryModel, SubscriptionTypeEnum
 from boe.utils.validation_utils import is_isodate_format_string
@@ -12,7 +14,7 @@ from cbaxter1988_utils.log_utils import get_logger
 from cbaxter1988_utils.serialization_utils import serialize_object
 from flask import Flask, request
 from flask_cors import CORS, cross_origin
-from boe.env import API_LISTEN_PORT
+
 logger = get_logger("BOE_API")
 
 app = Flask(__name__)
@@ -232,6 +234,33 @@ def store_events(family_id):
             )
             return build_json_response(status=http.HTTPStatus.OK, payload={"msg": "In Progress - Store Item Submitted"})
 
+
+@app.route("/api/v1/family/<family_id>/task", methods=['POST'])
+@cross_origin()
+def task_events(family_id):
+    body = request.json
+    task_manager_worker_client = TaskManagerWorkerClient()
+
+    for event_name, payload in body.items():
+        if event_name == 'NewTaskEvent':
+            user_query_model = UserDomainQueryModel()
+            try:
+                user_query_model.get_user_account(family_id=UUID(family_id),
+                                                  user_account_id=UUID(payload.get("owner_id")))
+            except ValueError:
+                return build_json_response(status=http.HTTPStatus.EXPECTATION_FAILED,
+                                           payload={"msg": "User does Not exists "})
+
+            task_manager_worker_client.publish_new_task_event(
+                name=payload.get("name"),
+                description=payload.get("description"),
+                due_date=payload.get("due_date"),
+                owner_id=payload.get("owner_id"),
+                evidence_required=payload.get("evidence_required"),
+                value=payload.get("value")
+            )
+
+            return build_json_response(status=http.HTTPStatus.OK, payload={"msg": "task created"})
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=API_LISTEN_PORT)
