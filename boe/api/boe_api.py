@@ -194,25 +194,6 @@ def get_families():
     )
 
 
-@app.route("/api/v1/family/<family_id>/store/item", methods=['POST'])
-@cross_origin()
-def add_store_item(family_id):
-    body = request.json
-
-    event_payload = body.get('NewStoreItemEvent')
-
-    store_manager_client = StoreWorkerClient()
-
-    store_manager_client.publish_new_store_item_event(
-        family_id=UUID(family_id),
-        item_name=event_payload.get("item_name"),
-        item_description=event_payload.get("item_description"),
-        item_value=event_payload.get("item_value"),
-    )
-
-    return build_json_response(status=http.HTTPStatus.OK, payload={"msg": "Store Item Submitted"})
-
-
 @app.route("/api/v1/family/<family_id>/store", methods=['GET'])
 @cross_origin()
 def get_store(family_id):
@@ -225,6 +206,31 @@ def get_store(family_id):
             payload={"msg": f"Store '{family_id}' not found"}
         )
     return build_json_response(status=http.HTTPStatus.OK, payload=serialize_object(store_model))
+
+
+@app.route("/api/v1/family/<family_id>/store", methods=['POST'])
+@cross_origin()
+def store_events(family_id):
+    body = request.json
+
+    store_manager_client = StoreWorkerClient()
+
+    for event_name, payload in body.items():
+        if event_name == 'RemoveStoreItem':
+            store_manager_client.publish_remove_store_item_event(
+                store_id=UUID(family_id),
+                item_id=payload.get("item_id")
+            )
+            return build_json_response(status=http.HTTPStatus.OK, payload={"msg": "In Progress"})
+
+        if event_name == 'NewStoreItemEvent':
+            store_manager_client.publish_new_store_item_event(
+                family_id=UUID(family_id),
+                item_name=payload.get("item_name"),
+                item_description=payload.get("item_description"),
+                item_value=payload.get("item_value"),
+            )
+            return build_json_response(status=http.HTTPStatus.OK, payload={"msg": "In Progress - Store Item Submitted"})
 
 
 if __name__ == '__main__':
