@@ -42,3 +42,13 @@ class StoreWorkerClient(PikaPublisherClient):
         self.publish_event(
             event=event
         )
+
+    def publish_remove_store_item_event(self, store_id: UUID, item_id: UUID):
+        event = self.event_factory.build_remove_store_item_event(
+            item_id=str(item_id),
+            store_id=str(store_id)
+        )
+
+        self.publish_event(
+            event=event
+        )
