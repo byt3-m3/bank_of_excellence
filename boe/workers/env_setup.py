@@ -5,12 +5,14 @@ from boe.env import (
     BANK_MANAGER_WORKER_QUEUE,
     USER_MANAGER_WORKER_QUEUE,
     STORE_MANAGER_WORKER_QUEUE,
+    TASK_MANAGER_WORKER_QUEUE,
     BOE_DLQ_QUEUE,
     BOE_DLQ_DEFAULT_ROUTING_KEY,
     BOE_APP_EXCHANGE,
     BANK_MANAGER_QUEUE_ROUTING_KEY,
     USER_MANAGER_QUEUE_ROUTING_KEY,
-    STORE_MANAGER_QUEUE_ROUTING_KEY
+    STORE_MANAGER_QUEUE_ROUTING_KEY,
+    TASK_MANAGER_QUEUE_ROUTING_KEY
 
 )
 from cbaxter1988_utils.pika_utils import make_pika_service_wrapper
@@ -34,6 +36,22 @@ def _set_app_exchange():
         exchange_type=ExchangeType.direct,
         auto_delete=True
 
+    )
+
+
+def set_up_task_manager_worker_env():
+    service_wrapper.create_queue(
+        queue=TASK_MANAGER_WORKER_QUEUE,
+        dlq_support=True,
+        dlq_queue=BOE_DLQ_QUEUE,
+        dlq_exchange=BOE_APP_EXCHANGE,
+        dlq_routing_key=BOE_DLQ_DEFAULT_ROUTING_KEY
+    )
+
+    service_wrapper.bind_queue(
+        queue=TASK_MANAGER_WORKER_QUEUE,
+        exchange=BOE_APP_EXCHANGE,
+        routing_key=TASK_MANAGER_QUEUE_ROUTING_KEY
     )
 
 
@@ -102,3 +120,4 @@ if __name__ == "__main__":
     set_up_user_manager_worker_env()
     set_up_bank_manager_worker_env()
     set_up_store_manager_worker_env()
+    set_up_task_manager_worker_env()
