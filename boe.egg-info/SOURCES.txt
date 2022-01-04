@@ -20,6 +20,7 @@ boe/clients/bank_manager_worker_client.py
 boe/clients/client.py
 boe/clients/notification_worker_client.py
 boe/clients/persistence_worker_client.py
+boe/clients/store_worker_client.py
 boe/clients/user_manager_worker_client.py
 boe/lib/__init__.py
 boe/lib/common_models.py
@@ -29,7 +30,6 @@ boe/lib/domains/bank_domain.py
 boe/lib/domains/persistence_domain.py
 boe/lib/domains/store_domain.py
 boe/lib/domains/user_domain.py
-boe/publishers/__init__.py
 boe/utils/__init__.py
 boe/utils/app_event_utils.py
 boe/utils/core_utils.py

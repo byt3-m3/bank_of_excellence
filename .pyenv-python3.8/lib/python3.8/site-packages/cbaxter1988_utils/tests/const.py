@@ -1,0 +1,2 @@
+VAR_NAME = 'TEST_NAME'
+
