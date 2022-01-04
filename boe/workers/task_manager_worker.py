@@ -14,10 +14,12 @@ from boe.env import (
 )
 from boe.lib.event_register import EventMapRegister
 from boe.workers.env_setup import set_up_task_manager_worker_env
+from cbaxter1988_utils.log_utils import get_logger
 from cbaxter1988_utils.pika_utils import make_pika_queue_consumer_v2
 from pika.adapters.blocking_connection import BlockingChannel
 from pika.spec import Basic, BasicProperties
 
+logger = get_logger("TaskManagerWorker")
 event_map_register = EventMapRegister()
 
 app = TaskManagerApp()
@@ -32,18 +34,24 @@ event_map_register.register_event(
 
 def on_message_callback(ch: BlockingChannel, method: Basic.Deliver, properties: BasicProperties, body):
     event_request = json.loads(body)
+    logger.info(f'Received Request: {event_request}')
 
     for event_name, payload in event_request.items():
         _event_factory = event_map_register.get_event_factory(event_name=event_name)
         _event_handler = event_map_register.get_event_handler(event_name=event_name)
+        _event_class = event_map_register.get_event_class(event_name=event_name)
 
         try:
             _event_model = _event_factory(**payload)
-            _event_handler(event=_event_model)
-            ch.basic_ack(delivery_tag=method.delivery_tag)
-        except Exception:
-            ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
+            _event_handler(_event_model)
 
+            ch.basic_ack(delivery_tag=method.delivery_tag)
+            logger.info(f"Handled Event {_event_class}")
+        except Exception as err:
+            logger.error(f"Unhandled Exception: {err}")
+
+            ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
+            raise
 
 def main():
     set_up_task_manager_worker_env()
