@@ -5,6 +5,9 @@ services:
   env_builder:
     image: cbaxter1988/boe_core
 
+    environment:
+      - STAGE=${STAGE}
+
     command: python3 -m boe.workers.env_setup
     env_file:
       - .env
@@ -19,31 +22,29 @@ services:
     env_file:
       - .env
 
-    depends_on:
-      - env_builder
+    environment:
+      - STAGE=${STAGE}
 
   bank_manager_worker:
     image: cbaxter1988/boe_core
     environment:
       - BANK_MANAGER_WORKER_EVENT_STORE=event_store.sqllite
+      - STAGE=${STAGE}
 
     command: python3 -m boe.workers.bank_manager_worker
     env_file:
       - .env
 
-    depends_on:
-      - env_builder
 
   store_manager_worker:
     image: cbaxter1988/boe_core
     environment:
       - STORE_MANAGER_WORKER_EVENT_STORE=event_store.sqllite
-
+      - STAGE=${STAGE}
     command: python3 -m boe.workers.store_manager_worker
     env_file:
       - .env
-    depends_on:
-      - env_builder
+
 
   user_manager_worker:
     image: cbaxter1988/boe_core
@@ -53,14 +54,13 @@ services:
     env_file:
       - .env
     command: python3 -m boe.workers.user_manager_worker
-    depends_on:
-      - env_builder
+
 
   task_manager_worker:
     image: cbaxter1988/boe_core
     environment:
       - USER_MANAGER_WORKER_EVENT_STORE=event_store.sqllite
-      - STAGE=BETA
+      - STAGE=${STAGE}
     env_file:
       - .env
 
