@@ -39,7 +39,8 @@ class TaskDomainAppEventFactory:
             description: str,
             due_date: datetime,
             evidence_required: bool,
-            value: float
+            value: float,
+            **kwargs
 
     ) -> NewTaskEvent:
         return NewTaskEvent(
