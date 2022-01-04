@@ -24,6 +24,7 @@ services:
 
     environment:
       - STAGE=${STAGE}
+      - API_LISTEN_PORT=${API_LISTEN_PORT}
 
   bank_manager_worker:
     image: cbaxter1988/boe_core
