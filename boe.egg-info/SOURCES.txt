@@ -13,6 +13,7 @@ boe/applications/__init__.py
 boe/applications/bank_domain_apps.py
 boe/applications/persistence_domain_apps.py
 boe/applications/store_domain_apps.py
+boe/applications/task_domain_apps.py
 boe/applications/transcodings.py
 boe/applications/user_domain_apps.py
 boe/clients/__init__.py
@@ -21,6 +22,7 @@ boe/clients/client.py
 boe/clients/notification_worker_client.py
 boe/clients/persistence_worker_client.py
 boe/clients/store_worker_client.py
+boe/clients/task_manager_client.py
 boe/clients/user_manager_worker_client.py
 boe/lib/__init__.py
 boe/lib/common_models.py
@@ -29,6 +31,7 @@ boe/lib/domains/__init__.py
 boe/lib/domains/bank_domain.py
 boe/lib/domains/persistence_domain.py
 boe/lib/domains/store_domain.py
+boe/lib/domains/task_domain.py
 boe/lib/domains/user_domain.py
 boe/utils/__init__.py
 boe/utils/app_event_utils.py
@@ -42,6 +45,7 @@ boe/workers/bank_manager_worker.py
 boe/workers/env_setup.py
 boe/workers/persistence_service_worker.py
 boe/workers/store_manager_worker.py
+boe/workers/task_manager_worker.py
 boe/workers/user_manager_worker.py
 tests/__init__.py
 tests/conftest.py
@@ -49,10 +53,12 @@ tests/applications/__init__.py
 tests/applications/_test_persistence_service_app.py
 tests/applications/test_bank_manager_app.py
 tests/applications/test_store_manager_app.py
+tests/applications/test_task_manager_app.py
 tests/applications/test_user_manager_app.py
 tests/lib/__init__.py
 tests/lib/domains/__init__.py
 tests/lib/domains/_test_persistence_domain.py
 tests/lib/domains/test_bank_domain.py
 tests/lib/domains/test_store_domain.py
+tests/lib/domains/test_task_domain.py
 tests/lib/domains/test_user_domain.py
