@@ -156,6 +156,8 @@ class TaskDomainQueryModel:
         value: float
         is_validated: bool
         status: TaskStatusEnum
+        name: str
+        description: str
 
     def __init__(self):
         self.client = get_mongo_client_w_auth(
@@ -184,6 +186,8 @@ class TaskDomainQueryModel:
                 status=TaskStatusEnum(task_data['task']["status"]),
                 task_id=task_data['_id'],
                 value=task_data['task']["value"],
+                name=task_data['task']["name"],
+                description=task_data['task']["description"],
             )
 
             for task_data in results
