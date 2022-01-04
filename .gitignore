@@ -4,4 +4,5 @@
 venv
 _db
 .env
-.pyenv
+.pyenv-.*
+.pytest_cache
