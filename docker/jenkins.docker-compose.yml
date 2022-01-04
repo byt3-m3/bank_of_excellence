@@ -51,6 +51,7 @@ services:
     image: cbaxter1988/boe_core
     environment:
       - USER_MANAGER_WORKER_EVENT_STORE=event_store.sqllite
+      - STAGE=${STAGE}
 
     env_file:
       - .env
