@@ -35,5 +35,10 @@ class TaskManagerWorkerClient(PikaPublisherClient):
             value=value,
             name=name
         )
-        print(event)
+
         self.publish_event(event=event)
+
+    def publish_mark_task_complete_event(self, task_id: UUID):
+        self.publish_event(event=self.event_factory.build_mark_task_complete_event(
+            task_id=str(task_id)
+        ))

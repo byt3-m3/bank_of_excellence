@@ -3,7 +3,8 @@ import json
 from boe.applications.task_domain_apps import (
     TaskManagerApp,
     TaskDomainAppEventFactory,
-    NewTaskEvent
+    NewTaskEvent,
+    MarkTaskCompleteEvent
 )
 from boe.env import (
     AMQP_HOST,
@@ -29,6 +30,13 @@ event_map_register.register_event(
     event_class=NewTaskEvent,
     event_handler=app.handle_event,
     event_factory_func=TaskDomainAppEventFactory.build_new_task_event
+)
+
+event_map_register.register_event(
+    event_name='MarkTaskCompleteEvent',
+    event_class=MarkTaskCompleteEvent,
+    event_handler=app.handle_event,
+    event_factory_func=TaskDomainAppEventFactory.build_mark_task_complete_event
 )
 
 

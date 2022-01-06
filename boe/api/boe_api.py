@@ -201,8 +201,10 @@ def get_families():
 @cross_origin()
 def get_store(family_id):
     query_model = StoreDomainQueryModel()
-
-    store_model = query_model.get_store_by_id(store_id=UUID(family_id))
+    try:
+        store_model = query_model.get_store_by_id(store_id=UUID(family_id))
+    except ValueError as err:
+        return build_json_response(status=http.HTTPStatus.EXPECTATION_FAILED, payload={"msg": str(err)})
     if store_model is None:
         return build_json_response(
             status=http.HTTPStatus.EXPECTATION_FAILED,
@@ -236,9 +238,9 @@ def store_events(family_id):
             return build_json_response(status=http.HTTPStatus.OK, payload={"msg": "In Progress - Store Item Submitted"})
 
 
-@app.route("/api/v1/family/<family_id>/task", methods=['POST'])
+@app.route("/api/v1/family/<family_id>/child/<account_id>/task", methods=['POST'])
 @cross_origin()
-def task_events(family_id):
+def task_events(family_id, account_id):
     body = request.json
     task_manager_worker_client = TaskManagerWorkerClient()
 
@@ -246,8 +248,9 @@ def task_events(family_id):
         if event_name == 'NewTaskEvent':
             user_query_model = UserDomainQueryModel()
             try:
+
                 user_query_model.get_user_account(family_id=UUID(family_id),
-                                                  user_account_id=UUID(payload.get("owner_id")))
+                                                  user_account_id=UUID(account_id))
             except ValueError:
                 return build_json_response(status=http.HTTPStatus.EXPECTATION_FAILED,
                                            payload={"msg": "User does Not exists "})
@@ -256,12 +259,17 @@ def task_events(family_id):
                 name=payload.get("name"),
                 description=payload.get("description"),
                 due_date=payload.get("due_date"),
-                owner_id=payload.get("owner_id"),
+                owner_id=UUID(account_id),
                 evidence_required=payload.get("evidence_required"),
                 value=payload.get("value")
             )
 
             return build_json_response(status=http.HTTPStatus.OK, payload={"msg": "task created"})
+
+        if event_name == 'MarkTaskCompleteEvent':
+            task_manager_worker_client.publish_mark_task_complete_event(task_id=payload.get("task_id"))
+
+            return build_json_response(status=http.HTTPStatus.OK, payload={"msg": "In Progress"})
 
 
 @app.route("/api/v1/family/<family_id>/child/<child_id>/tasks", methods=['GET'])
