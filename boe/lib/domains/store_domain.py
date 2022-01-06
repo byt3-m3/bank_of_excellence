@@ -180,13 +180,12 @@ class StoreDomainQueryModel:
         collection = get_collection(self.db, collection=STORE_TABLE)
 
         records = list(get_item(collection, item_id=store_id))
-        print(records)
         if len(records) == 0:
             raise ValueError("Invalid Record Returned")
 
         if len(records) == 1:
             models = self._build_store_models(records=records)
 
-            print(models)
+
 
             return models[0]
