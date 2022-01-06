@@ -290,7 +290,7 @@ class UserDomainQueryModel:
     @dataclass(frozen=True)
     class UserAccountModel:
         _id: str
-        account_type: int
+        account_type: UserAccountTypeEnum
         first_name: str
         last_name: str
         email: str
@@ -374,10 +374,11 @@ class UserDomainQueryModel:
     def get_user_account(self, family_id: UUID, user_account_id: UUID) -> 'UserDomainQueryModel.UserAccountModel':
         family = self.get_family_by_id(family_id=family_id)
 
-        for member in family.members:
+        if family.members:
+            for member in family.members:
 
-            if member._id == str(user_account_id):
-                return member
+                if member._id == str(user_account_id):
+                    return member
 
 
 class UserDomainFactory:
