@@ -3,10 +3,12 @@ import os
 from boe.secrets import RABBITMQ_USERNAME, RABBITMQ_PASSWORD
 
 # Core Vars
+
 STAGE = os.getenv("STAGE", "LOCAL")
 API_LISTEN_PORT = os.getenv("API_LISTEN_PORT", 5000)
 
 # MongoDB Vars
+
 MONGO_HOST = os.getenv("MONGO_HOST", "192.168.1.5")
 MONGO_PORT = os.getenv("MONGO_PORT", 27017)
 
@@ -29,6 +31,7 @@ STORE_TABLE = f'{STAGE}_{_STORE_TABLE_ID}'.upper()
 TASK_TABLE = f'{STAGE}_{_TASK_TABLE_ID}'.upper()
 
 # Pika VARS
+
 AMQP_HOST = os.getenv("AMQP_HOST", '192.168.1.5')
 AMQP_PORT = os.getenv("AMQP_PORT", 5672)
 
@@ -63,6 +66,7 @@ TASK_MANAGER_QUEUE_ROUTING_KEY = 'task_manager_service'
 STORE_MANAGER_QUEUE_ROUTING_KEY = 'store_manager_service'
 PERSISTENCE_QUEUE_ROUTING_KEY = 'persistence_service'
 NOTIFICATION_QUEUE_ROUTING_KEY = 'notification_service'
+
 # SQLLITE Vars
 
 _WORKER_EVENT_STORE = os.getenv('WORKER_EVENT_STORE', 'eventstore.sqllite')
@@ -82,3 +86,11 @@ USER_MANAGER_WORKER_EVENT_STORE = f'{_USER_MANAGER__WORKER_EVENT_STORE}'
 
 COGNITO_POOL_ID = os.getenv("COGNITO_POOL_ID", 'us-east-1_fRkg83NZI')
 COGNITO_APP_CLIENT_ID = os.getenv("COGNITO_APP_CLIENT_ID")
+
+# Postgres Config
+
+POSTGRES_DB_HOST = os.getenv("POSTGRES_DB_HOST", '192.168.1.5')
+POSTGRES_DB_PORT = os.getenv("POSTGRES_DB_PORT", '5432')
+POSTGRES_DB_NAME = os.getenv("POSTGRES_DB_NAME", 'eventsourcing')
+POSTGRES_DB_USER = os.getenv("POSTGRES_DB_USER", "eventsourcing")
+POSTGRES_DB_PASSWORD = os.getenv("POSTGRES_DB_PASSWORD", "eventsourcing")
