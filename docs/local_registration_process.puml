@@ -1,0 +1,33 @@
+@startuml
+autonumber
+actor NewUser
+entity BOE_UI
+entity BOE_CORE_API
+entity USER_MANAGER_WORKER
+queue USER_MANAGER_WORKER_QUEUE
+entity STORE_MANAGER_WORKER
+queue STORE_MANAGER_WORKER_QUEUE
+
+database MongoDB
+
+
+NewUser -> BOE_UI : Submit NewFamily Registration form
+BOE_UI -> BOE_CORE_API: post_request(endpoint=/api/v1/register/local, payload={})
+BOE_CORE_API -> USER_MANAGER_WORKER_QUEUE : publish_event(event=CreateLocalFamilyEvent)
+BOE_CORE_API --> BOE_UI: response(status=200 content-type='application/json', body={family_id: id, user_id: id})
+USER_MANAGER_WORKER_QUEUE -> USER_MANAGER_WORKER: handle_event(event=CreateLocalFamilyEvent)
+USER_MANAGER_WORKER -> MongoDB : Save(table='FamilyTable', item=FamilyAggregate, operation='create')
+USER_MANAGER_WORKER -> USER_MANAGER_WORKER_QUEUE: publish_event(event=CreateLocalAdultAccountEvent)
+USER_MANAGER_WORKER -> STORE_MANAGER_WORKER_QUEUE: publish_event(event=CreateFamilyStoreEvent)
+STORE_MANAGER_WORKER_QUEUE -> STORE_MANAGER_WORKER: handle_event(event=CreateFamilyStoreEvent)
+STORE_MANAGER_WORKER -> MongoDB : Save(table='StoreTable', item=StoreAggregate, operation='create')
+USER_MANAGER_WORKER_QUEUE -> USER_MANAGER_WORKER: handle_event(event=CreateLocalAdultAccountEvent)
+
+
+USER_MANAGER_WORKER -> MongoDB : Save(table='CredentialTable', item=LocalCredModel, operation='create')
+USER_MANAGER_WORKER -> USER_MANAGER_WORKER_QUEUE: publish_event(event=AppendFamilyUserEvent)
+USER_MANAGER_WORKER_QUEUE -> USER_MANAGER_WORKER: handle_event(event=AppendFamilyUserEvent)
+USER_MANAGER_WORKER -> MongoDB : Save(table='FamilyTable', item=FamilyAggregate, operation='update')
+
+
+@enduml
