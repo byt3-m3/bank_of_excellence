@@ -1,3 +1,5 @@
+import os
+
 from boe.env import (
     AMQP_HOST,
     RABBITMQ_PASSWORD,
@@ -12,7 +14,12 @@ from boe.env import (
     BANK_MANAGER_QUEUE_ROUTING_KEY,
     USER_MANAGER_QUEUE_ROUTING_KEY,
     STORE_MANAGER_QUEUE_ROUTING_KEY,
-    TASK_MANAGER_QUEUE_ROUTING_KEY
+    TASK_MANAGER_QUEUE_ROUTING_KEY,
+    POSTGRES_DB_NAME,
+    POSTGRES_DB_HOST,
+    POSTGRES_DB_PORT,
+    POSTGRES_DB_PASSWORD,
+    POSTGRES_DB_USER
 
 )
 from cbaxter1988_utils.pika_utils import make_pika_service_wrapper
@@ -37,6 +44,19 @@ def _set_app_exchange():
         auto_delete=True
 
     )
+
+
+def prepare_eventsourcing_postgres_env():
+    os.environ["INFRASTRUCTURE_FACTORY"] = "eventsourcing.postgres:Factory"
+    os.environ["POSTGRES_DBNAME"] = POSTGRES_DB_NAME
+    os.environ["POSTGRES_HOST"] = POSTGRES_DB_HOST
+    os.environ["POSTGRES_PORT"] = POSTGRES_DB_PORT
+    os.environ["POSTGRES_USER"] = POSTGRES_DB_USER
+    os.environ["POSTGRES_PASSWORD"] = POSTGRES_DB_PASSWORD
+    os.environ["POSTGRES_CONN_MAX_AGE"] = "10"
+    os.environ["POSTGRES_PRE_PING"] = "y"
+    os.environ["POSTGRES_LOCK_TIMEOUT"] = "5"
+    os.environ["POSTGRES_IDLE_IN_TRANSACTION_SESSION_TIMEOUT"] = "5"
 
 
 def set_up_task_manager_worker_env():
