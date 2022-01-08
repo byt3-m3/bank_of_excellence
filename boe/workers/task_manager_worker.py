@@ -2,9 +2,8 @@ import json
 
 from boe.applications.task_domain_apps import (
     TaskManagerApp,
-    TaskDomainAppEventFactory,
-    NewTaskEvent,
-    MarkTaskCompleteEvent
+    TaskManagerAppEventFactory,
+
 )
 from boe.env import (
     AMQP_HOST,
@@ -27,16 +26,30 @@ app = TaskManagerApp()
 
 event_map_register.register_event(
     event_name='NewTaskEvent',
-    event_class=NewTaskEvent,
+    event_class=TaskManagerAppEventFactory.NewTaskEvent,
     event_handler=app.handle_event,
-    event_factory_func=TaskDomainAppEventFactory.build_new_task_event
+    event_factory_func=TaskManagerAppEventFactory.build_new_task_event
 )
 
 event_map_register.register_event(
     event_name='MarkTaskCompleteEvent',
-    event_class=MarkTaskCompleteEvent,
+    event_class=TaskManagerAppEventFactory.MarkTaskCompleteEvent,
     event_handler=app.handle_event,
-    event_factory_func=TaskDomainAppEventFactory.build_mark_task_complete_event
+    event_factory_func=TaskManagerAppEventFactory.build_mark_task_complete_event
+)
+
+event_map_register.register_event(
+    event_name='UpdateTaskValueEvent',
+    event_class=TaskManagerAppEventFactory.UpdateTaskValueEvent,
+    event_handler=app.handle_event,
+    event_factory_func=TaskManagerAppEventFactory.build_update_task_value_event
+)
+
+event_map_register.register_event(
+    event_name='AddEvidenceEvent',
+    event_class=TaskManagerAppEventFactory.AddEvidenceEvent,
+    event_handler=app.handle_event,
+    event_factory_func=TaskManagerAppEventFactory.build_add_evidence_event
 )
 
 
@@ -60,6 +73,7 @@ def on_message_callback(ch: BlockingChannel, method: Basic.Deliver, properties: 
 
             ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
             raise
+
 
 def main():
     set_up_task_manager_worker_env()
