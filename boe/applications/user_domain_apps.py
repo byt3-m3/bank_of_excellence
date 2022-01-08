@@ -198,6 +198,27 @@ class UserManagerAppEventFactory:
         )
 
 
+class UserAuthManagerEventFactory:
+    @dataclass(frozen=True)
+    class UserAuthRequestEvent(AppEvent):
+        username: str
+        password: str
+        client_id: str
+
+    @classmethod
+    def build_user_auth_request_event(
+            cls,
+            username: str,
+            client_id: str,
+            password: str
+    ):
+        return cls.UserAuthRequestEvent(
+            username=username,
+            password=password,
+            client_id=client_id
+        )
+
+
 class UserManagerApp(Application):
 
     def __init__(self):
@@ -364,3 +385,35 @@ class UserManagerApp(Application):
         else:
             self.metric_publisher.incr_mock_cognito_user_created_success_metric(service_name=self._service_name)
             logger.info(f"Received and Processed Fake Event={event}")
+
+
+class UserAuthenticationApp(Application):
+    def __init__(self):
+        super().__init__()
+
+    @singledispatchmethod
+    def handle_event(self, event: AppEvent):
+        raise NotImplementedError()
+
+    @handle_event.register(UserAuthManagerEventFactory.UserAuthRequestEvent)
+    def _(self, event: UserAuthManagerEventFactory.UserAuthRequestEvent):
+
+        logger.info(f'Processing Event {event}')
+        cognito_client = get_cognito_idp_client()
+
+        initiate_auth_results = cognito_client.initiate_auth(
+            ClientId=event.client_id,
+            AuthFlow="USER_PASSWORD_AUTH",
+            AuthParameters={
+                "USERNAME": event.username,
+                "PASSWORD": event.password
+            },
+
+        )
+        logger.debug(initiate_auth_results)
+
+        if initiate_auth_results.get("ChallengeName") == 'NEW_PASSWORD_REQUIRED':
+            raise NewPasswordRequiredError("")
+
+        logger.info(f"Authenticated: {event.username}")
+        return initiate_auth_results.get("AuthenticationResult")
