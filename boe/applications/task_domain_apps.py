@@ -3,7 +3,12 @@ from datetime import datetime
 from functools import singledispatchmethod
 from uuid import UUID
 
-from boe.applications.transcodings import TaskEntityTranscoding, TaskStatusEnumTranscoding
+import cbaxter1988_utils.log_utils
+from boe.applications.transcodings import (
+    TaskEntityTranscoding,
+    TaskStatusEnumTranscoding,
+    BytesTranscoding
+)
 from boe.lib.common_models import AppEvent
 from boe.lib.domains.task_domain import (
     TaskAggregate,

@@ -23,6 +23,17 @@ from boe.lib.domains.user_domain import (
 from eventsourcing.persistence import Transcoding
 
 
+class BytesTranscoding(Transcoding):
+    type = bytes
+    name = "bytes"
+
+    def encode(self, o: bytes) -> str:
+        return o.decode()
+
+    def decode(self, d: str):
+        return d.encode()
+
+
 class TaskStatusEnumTranscoding(Transcoding):
     type = TaskStatusEnum
     name = "TaskStatusEnum"
