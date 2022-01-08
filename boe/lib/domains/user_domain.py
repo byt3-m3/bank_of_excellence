@@ -78,33 +78,21 @@ class FamilyEntity(Entity):
 
 
 class CredentialTypeEnum(Enum):
-    basic = 0
-
-
-@dataclass
-class Creds:
-
-    def update_creds(self, **kwargs):
-        pass
-
-
-@dataclass
-class BasicCreds(Creds):
-    username: str
-    password_hash: str
-
-    def update_creds(self, username: str, password: str):
-        self.username = username
-        self.password_hash = password
-
-    def update_password_hash(self, password_hash: str):
-        self.password_hash = password_hash
+    basic = 'basic'
+    local = 'local'
 
 
 @dataclass
 class Credential:
     credential_type: CredentialTypeEnum
-    creds: Union[Creds, BasicCreds]
+
+
+@dataclass
+class LocalCredential(Credential):
+    username: str
+    password_hash: bytes
+    access_token: bytes = None
+    refresh_token: bytes = None
 
 
 @dataclass
@@ -116,10 +104,41 @@ class UserAccount(Entity):
     email: str
     dob: datetime
     grade: int = field(default=0)
-    credential: Credential = field(default=Credential(credential_type=CredentialTypeEnum.basic, creds=BasicCreds(
-        password_hash='',
-        username=""
-    )))
+
+
+@dataclass
+class UserAccountAggregate(Aggregate):
+    user_entity: UserAccount
+    credential: Credential
+
+    @classmethod
+    def create(
+            cls,
+            account_type: UserAccountTypeEnum,
+            first_name: str,
+            last_name: str,
+            family_id: UUID,
+            email: str,
+            dob: datetime,
+            credential: Credential
+    ):
+        user_entity = UserDomainFactory.build_user_account_entity(
+            account_type=account_type,
+            last_name=last_name,
+            first_name=first_name,
+            family_id=family_id,
+            email=email,
+            dob=dob,
+            _id=uuid4(),
+
+        )
+
+        return cls._create(
+            cls.Created,
+            id=user_entity.id,
+            user_entity=user_entity,
+            credential=credential
+        )
 
 
 @dataclass
@@ -182,7 +201,7 @@ class FamilyUserAggregate(Aggregate):
 
     @event
     def create_new_adult_member(self, email: str, first_name: str, last_name: str, dob: datetime, _id: UUID = None):
-        account = UserDomainFactory.build_user_account(
+        account = UserDomainFactory.build_user_account_entity(
             email=email,
             first_name=first_name,
             last_name=last_name,
@@ -203,7 +222,7 @@ class FamilyUserAggregate(Aggregate):
             grade: int,
             _id: UUID = None
     ):
-        account = UserDomainFactory.build_user_account(
+        account = UserDomainFactory.build_user_account_entity(
             email=email,
             first_name=first_name,
             last_name=last_name,
@@ -436,7 +455,7 @@ class UserDomainFactory:
         )
 
     @staticmethod
-    def build_user_account(
+    def build_user_account_entity(
             account_type: Union[UserAccountTypeEnum, int],
             dob: datetime,
             first_name: str,
@@ -459,11 +478,35 @@ class UserDomainFactory:
         )
 
     @staticmethod
-    def build_basic_credentials(password_hash: bytes, username: str) -> Credential:
-        return Credential(
-            credential_type=CredentialTypeEnum.basic,
-            creds={
-                "password_hash": password_hash,
-                "username": username
-            }
+    def build_local_credentials(password_hash: bytes, username: str) -> Credential:
+        return LocalCredential(
+            credential_type=CredentialTypeEnum.local,
+            username=username,
+            password_hash=password_hash
+        )
+
+    @staticmethod
+    def build_user_account_aggregate_w_local_credential(
+            account_type: Union[UserAccountTypeEnum, int],
+            dob: datetime,
+            first_name: str,
+            last_name: str,
+            email: str,
+            family_id: UUID,
+            username: str,
+            password_hash: bytes,
+
+            _id: UUID = None
+    ) -> UserAccountAggregate:
+        return UserAccountAggregate.create(
+            account_type=account_type,
+            family_id=family_id,
+            last_name=last_name,
+            first_name=first_name,
+            email=email,
+            dob=dob,
+            credential=UserDomainFactory.build_local_credentials(
+                username=username,
+                password_hash=password_hash
+            )
         )

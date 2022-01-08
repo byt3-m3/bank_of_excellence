@@ -58,7 +58,7 @@ def family_user_aggregate():
 
 @fixture
 def child_member_account_testable(family_user_aggregate):
-    return UserDomainFactory.build_user_account(
+    return UserDomainFactory.build_user_account_entity(
         account_type=UserAccountTypeEnum.child,
         first_name='TEST_NAME',
         last_name="TEST_LAST",
