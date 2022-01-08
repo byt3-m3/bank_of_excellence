@@ -18,7 +18,7 @@ app = Flask(__name__)
 CORS(app)
 
 
-@app.route("/api/v1/auth", methods=['POST'])
+@app.route("/api/v1/auth/basic", methods=['POST'])
 def authenticate_user():
     body = request.json
 
