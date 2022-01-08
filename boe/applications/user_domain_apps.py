@@ -30,12 +30,16 @@ from boe.lib.domains.user_domain import (
     UserDomainWriteModel
 )
 from boe.metrics import ServiceMetricPublisher
-from cbaxter1988_utils.aws_cognito_utils import add_new_user_basic
+from cbaxter1988_utils.aws_cognito_utils import add_new_user_basic, get_cognito_idp_client
 from cbaxter1988_utils.log_utils import get_logger
 from eventsourcing.application import Application
 from eventsourcing.persistence import Transcoder
 
 logger = get_logger("UserManagerApp")
+
+
+class NewPasswordRequiredError(BaseException):
+    pass
 
 
 @dataclass(frozen=True)
