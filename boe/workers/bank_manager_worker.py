@@ -1,5 +1,4 @@
 import json
-import os
 
 import pika.exceptions
 from boe.applications.bank_domain_apps import BankDomainAppEventFactory
@@ -13,13 +12,12 @@ from boe.env import (
     AMQP_HOST,
     RABBITMQ_USERNAME,
     RABBITMQ_PASSWORD,
-    BANK_MANAGER_WORKER_QUEUE,
-    BANK_MANAGER_WORKER_EVENT_STORE
+    BANK_MANAGER_WORKER_QUEUE
 )
 from boe.lib.event_register import EventMapRegister
 from boe.utils.app_event_utils import register_event_map
 from boe.utils.metric_utils import MetricWriter
-from boe.workers.env_setup import set_up_bank_manager_worker_env
+from boe.workers.env_setup import set_up_bank_manager_worker_env, prepare_eventsourcing_postgres_env
 from cbaxter1988_utils.log_utils import get_logger
 from cbaxter1988_utils.pika_utils import make_pika_queue_consumer_v2, PikaUtilsError
 from eventsourcing.application import AggregateNotFound
@@ -28,11 +26,8 @@ from pika.spec import Basic, BasicProperties
 
 logger = get_logger("bank_manager_worker")
 metric_writer = MetricWriter()
-INFRASTRUCTURE_FACTORY = "eventsourcing.sqlite:Factory"
-SQLITE_DBNAME = BANK_MANAGER_WORKER_EVENT_STORE
 
-os.environ['INFRASTRUCTURE_FACTORY'] = INFRASTRUCTURE_FACTORY
-os.environ['SQLITE_DBNAME'] = SQLITE_DBNAME
+prepare_eventsourcing_postgres_env()
 
 app = BankManagerApp()
 event_map_register = EventMapRegister()
