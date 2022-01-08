@@ -1,7 +1,7 @@
 import datetime
 from uuid import UUID
 
-from boe.applications.task_domain_apps import TaskDomainAppEventFactory
+from boe.applications.task_domain_apps import TaskManagerAppEventFactory
 from boe.clients.client import PikaPublisherClient
 from boe.env import BOE_APP_EXCHANGE, TASK_MANAGER_QUEUE_ROUTING_KEY
 
@@ -15,7 +15,7 @@ class TaskManagerWorkerClient(PikaPublisherClient):
             TASK_MANAGER_QUEUE_ROUTING_KEY,
 
         )
-        self.event_factory = TaskDomainAppEventFactory()
+        self.event_factory = TaskManagerAppEventFactory()
 
     def publish_new_task_event(
             self,
