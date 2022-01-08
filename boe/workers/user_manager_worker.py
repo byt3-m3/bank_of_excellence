@@ -1,5 +1,4 @@
 import json
-import os
 
 from boe.applications.user_domain_apps import (
     UserManagerAppEventFactory,
@@ -14,12 +13,11 @@ from boe.env import (
     AMQP_HOST,
     RABBITMQ_USERNAME,
     RABBITMQ_PASSWORD,
-    USER_MANAGER_WORKER_QUEUE,
-    USER_MANAGER_WORKER_EVENT_STORE
+    USER_MANAGER_WORKER_QUEUE
 
 )
 from boe.lib.event_register import EventMapRegister
-from boe.workers.env_setup import set_up_user_manager_worker_env
+from boe.workers.env_setup import set_up_user_manager_worker_env, prepare_eventsourcing_postgres_env
 from cbaxter1988_utils.aws_cognito_utils import get_cognito_idp_client
 from cbaxter1988_utils.log_utils import get_logger
 from cbaxter1988_utils.pika_utils import make_pika_queue_consumer_v2, PikaUtilsError
@@ -27,13 +25,9 @@ from pika.adapters.blocking_connection import BlockingChannel
 from pika.exceptions import ChannelClosedByBroker, StreamLostError, AMQPHeartbeatTimeout
 from pika.spec import Basic, BasicProperties
 
-INFRASTRUCTURE_FACTORY = "eventsourcing.sqlite:Factory"
-SQLITE_DBNAME = USER_MANAGER_WORKER_EVENT_STORE
-
-os.environ['INFRASTRUCTURE_FACTORY'] = INFRASTRUCTURE_FACTORY
-os.environ['SQLITE_DBNAME'] = SQLITE_DBNAME
-
 logger = get_logger('UserManagerWorker')
+
+prepare_eventsourcing_postgres_env()
 
 app = UserManagerApp()
 app_event_factory = UserManagerAppEventFactory()

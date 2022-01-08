@@ -13,7 +13,7 @@ from boe.env import (
 
 )
 from boe.lib.event_register import EventMapRegister
-from boe.workers.env_setup import set_up_task_manager_worker_env
+from boe.workers.env_setup import set_up_task_manager_worker_env, prepare_eventsourcing_postgres_env
 from cbaxter1988_utils.log_utils import get_logger
 from cbaxter1988_utils.pika_utils import make_pika_queue_consumer_v2
 from pika.adapters.blocking_connection import BlockingChannel
@@ -21,6 +21,8 @@ from pika.spec import Basic, BasicProperties
 
 logger = get_logger("TaskManagerWorker")
 event_map_register = EventMapRegister()
+
+prepare_eventsourcing_postgres_env()
 
 app = TaskManagerApp()
 

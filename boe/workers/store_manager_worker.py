@@ -1,5 +1,4 @@
 import json
-import os
 
 from boe.applications.store_domain_apps import (
     StoreManagerApp,
@@ -12,12 +11,11 @@ from boe.env import (
     AMQP_HOST,
     RABBITMQ_PASSWORD,
     RABBITMQ_USERNAME,
-    STORE_MANAGER_WORKER_QUEUE,
-    STORE_MANAGER_WORKER_EVENT_STORE
+    STORE_MANAGER_WORKER_QUEUE
 )
 from boe.lib.event_register import EventMapRegister
 from boe.utils.app_event_utils import register_event_map
-from boe.workers.env_setup import set_up_store_manager_worker_env
+from boe.workers.env_setup import set_up_store_manager_worker_env, prepare_eventsourcing_postgres_env
 from cbaxter1988_utils.log_utils import get_logger
 from cbaxter1988_utils.pika_utils import PikaUtilsError, make_pika_queue_consumer_v2
 from pika.adapters.blocking_connection import BlockingChannel
@@ -26,11 +24,7 @@ from pika.spec import Basic, BasicProperties
 
 logger = get_logger("StoreManagerApp")
 
-INFRASTRUCTURE_FACTORY = "eventsourcing.sqlite:Factory"
-SQLITE_DBNAME = STORE_MANAGER_WORKER_EVENT_STORE
-
-os.environ['INFRASTRUCTURE_FACTORY'] = INFRASTRUCTURE_FACTORY
-os.environ['SQLITE_DBNAME'] = SQLITE_DBNAME
+prepare_eventsourcing_postgres_env()
 
 app = StoreManagerApp()
 
