@@ -26,7 +26,7 @@ from boe.lib.common_models import AppEvent, AppNotification
 from boe.lib.domains.user_domain import (
     UserDomainFactory,
     SubscriptionTypeEnum,
-    FamilyUserAggregate,
+    FamilyAggregate,
     UserDomainWriteModel
 )
 from boe.metrics import ServiceMetricPublisher
@@ -253,10 +253,10 @@ class UserManagerApp(Application):
         transcoder.register(SubscriptionTypeEnumTranscoding())
         transcoder.register(UserAccountTypeEnumTranscoding())
 
-    def _get_family_aggregate(self, family_id: UUID) -> FamilyUserAggregate:
+    def _get_family_aggregate(self, family_id: UUID) -> FamilyAggregate:
         return self.repository.get(aggregate_id=family_id)
 
-    def _save_aggregate(self, aggregate: FamilyUserAggregate):
+    def _save_aggregate(self, aggregate: FamilyAggregate):
         self.save(aggregate)
 
         try:
@@ -271,7 +271,7 @@ class UserManagerApp(Application):
 
     @handle_event.register(NewFamilyEvent)
     def _handle_new_family_event(self, event: NewFamilyEvent):
-        aggregate = self.factory.build_user_family_user_aggregate(
+        aggregate = self.factory.build_family_aggregate(
             description=event.description,
             name=event.name,
             subscription_type=event.subscription_type,
@@ -303,7 +303,7 @@ class UserManagerApp(Application):
 
     @handle_event.register(NewChildAccountEvent)
     def _handle_new_child_account_event(self, event: NewChildAccountEvent):
-        aggregate: FamilyUserAggregate = self.repository.get(aggregate_id=event.family_id)
+        aggregate: FamilyAggregate = self.repository.get(aggregate_id=event.family_id)
 
         aggregate.create_new_child_member(
             dob=event.dob,
@@ -336,7 +336,7 @@ class UserManagerApp(Application):
 
     @handle_event.register(NewAdultAccountEvent)
     def _handle_new_adult_account_event(self, event: NewAdultAccountEvent):
-        aggregate: FamilyUserAggregate = self.repository.get(aggregate_id=event.family_id)
+        aggregate: FamilyAggregate = self.repository.get(aggregate_id=event.family_id)
 
         aggregate.create_new_adult_member(
             dob=event.dob,
