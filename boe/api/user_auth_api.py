@@ -10,7 +10,7 @@ from boe.env import COGNITO_APP_CLIENT_ID
 from cbaxter1988_utils.flask_utils import build_json_response
 from cbaxter1988_utils.log_utils import get_logger
 from flask import Flask, request
-from flask_cors import CORS
+from flask_cors import CORS, cross_origin
 from boe.utils.password_utils import get_key_salt_from_value, verify_password_hash
 
 logger = get_logger("UserAuthAPI")
@@ -21,6 +21,7 @@ CORS(app)
 
 
 @app.route("/api/v1/auth/cognito/basic", methods=['POST'])
+@cross_origin()
 def authenticate_cognito_user():
     body = request.json
 
@@ -42,6 +43,7 @@ def authenticate_cognito_user():
 
 
 @app.route("/api/v1/auth/local/basic", methods=['POST'])
+@cross_origin()
 def authenticate_local_user():
     body = request.json
 
