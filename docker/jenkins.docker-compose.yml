@@ -29,7 +29,7 @@ services:
   boe_api:
     image: cbaxter1988/boe_core
 
-    command: python3 -m boe.api.boe_api
+    command: python3 -m boe.api.core_api
     ports:
       - ${API_LISTEN_PORT}:${API_LISTEN_PORT}
 
