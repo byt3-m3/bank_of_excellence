@@ -9,7 +9,8 @@ from boe.env import (
     MONGO_PORT,
     APP_DB,
     FAMILY_TABLE,
-    USER_ACCOUNT_TABLE
+    USER_ACCOUNT_TABLE,
+    CREDENTIAL_STORE_TABLE
 )
 from boe.lib.common_models import Entity
 from boe.secrets import MONGO_DB_PASSWORD, MONGO_DB_USERNAME
@@ -224,6 +225,18 @@ class UserDomainWriteModel:
             add_item(item=serialized_aggregate, collection=collection, key_id='_id')
         except DuplicateKeyError:
             update_item(new_values=serialized_aggregate, item_id=_record_id, collection=collection)
+
+    def save_local_credential(self, username: str, password_hash: bytes):
+        serialized_cred = serialize_object_to_dict({
+            "_id": username,
+            "password_hash": password_hash
+        })
+
+        collection = get_collection(database=self.db, collection=CREDENTIAL_STORE_TABLE)
+        try:
+            add_item(item=serialized_cred, collection=collection, key_id='_id')
+        except DuplicateKeyError:
+            update_item(new_values=serialized_cred, item_id=username, collection=collection)
 
 
 class UserDomainQueryModel:

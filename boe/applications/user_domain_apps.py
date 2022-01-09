@@ -272,6 +272,10 @@ class UserManagerApp(Application):
             )
         )
         self._save_aggregate(aggregate=user_aggregate)
+        self.write_model.save_local_credential(
+            username=user_aggregate.credential.username,
+            password_hash=user_aggregate.credential.password_hash
+        )
 
         family_aggregate.add_family_member(user_aggregate_id=user_aggregate.id),
         self._save_aggregate(family_aggregate)

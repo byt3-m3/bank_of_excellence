@@ -6,7 +6,8 @@ from boe.env import (
     TASK_TABLE,
     STORE_TABLE,
     APP_DB,
-    BANK_ACCOUNT_TABLE
+    BANK_ACCOUNT_TABLE,
+    CREDENTIAL_STORE_TABLE
 )
 from boe.secrets import MONGO_DB_USERNAME, MONGO_DB_PASSWORD
 from cbaxter1988_utils.pymongo_utils import get_mongo_client_w_auth, get_collection, get_database
@@ -23,7 +24,8 @@ tables = [
     TASK_TABLE,
     STORE_TABLE,
     USER_ACCOUNT_TABLE,
-    BANK_ACCOUNT_TABLE
+    BANK_ACCOUNT_TABLE,
+    CREDENTIAL_STORE_TABLE
 ]
 
 for table in tables:

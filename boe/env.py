@@ -20,6 +20,7 @@ _FAMILY_TABLE_ID = os.getenv("FAMILY_TABLE_ID", "family_aggregate_table")
 _USER_ACCOUNT_TABLE_ID = os.getenv("USER_ACCOUNT_TABLE_ID", "user_account_aggregate_table")
 _STORE_TABLE_ID = os.getenv("STORE_TABLE_ID", "store_aggregate_table")
 _TASK_TABLE_ID = os.getenv("TASK_TABLE_ID", "task_aggregate_table")
+_CREDENTIAL_STORE_TABLE_ID = os.getenv("CREDENTIAL_STORE_TABLE_ID", "credential_store_table")
 
 APP_DB = f'{STAGE}_{_APP_DB}'.upper()
 BANK_ACCOUNT_TABLE = f'{STAGE}_{_BANK_ACCOUNT_TABLE_ID}'.upper()
@@ -29,6 +30,7 @@ FAMILY_TABLE = f'{STAGE}_{_FAMILY_TABLE_ID}'.upper()
 USER_ACCOUNT_TABLE = f'{STAGE}_{_USER_ACCOUNT_TABLE_ID}'.upper()
 STORE_TABLE = f'{STAGE}_{_STORE_TABLE_ID}'.upper()
 TASK_TABLE = f'{STAGE}_{_TASK_TABLE_ID}'.upper()
+CREDENTIAL_STORE_TABLE = f'{STAGE}_{_CREDENTIAL_STORE_TABLE_ID}'.upper()
 
 # Pika VARS
 
