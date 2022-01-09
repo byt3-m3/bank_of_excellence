@@ -149,22 +149,39 @@ class UserManagerAppEventFactory:
 
 class UserAuthManagerEventFactory:
     @dataclass(frozen=True)
-    class UserAuthRequestEvent(AppEvent):
+    class CognitoAuthRequestEvent(AppEvent):
         username: str
         password: str
         client_id: str
 
+    @dataclass(frozen=True)
+    class LocalAuthRequestEvent(AppEvent):
+        username: str
+        password_hash: str
+
     @classmethod
-    def build_user_auth_request_event(
+    def build_cognito_auth_request_event(
             cls,
             username: str,
             client_id: str,
             password: str
     ):
-        return cls.UserAuthRequestEvent(
+        return cls.CognitoAuthRequestEvent(
             username=username,
             password=password,
             client_id=client_id
+        )
+
+    @classmethod
+    def build_local_auth_request_event(
+            cls,
+            username: str,
+            password_hash: bytes
+    ):
+        return cls.LocalAuthRequestEvent(
+            username=username,
+            password_hash=password_hash.decode(),
+
         )
 
 
@@ -245,6 +262,12 @@ class UserManagerApp(Application):
         )
 
         self._save_aggregate(aggregate=family_aggregate)
+        self.store_manager_pika_client.publish_event(
+            event=StoreManagerAppEventFactory.build_new_store_event(
+                family_id=str(family_aggregate.id),
+
+            )
+        )
         self._save_aggregate(aggregate=user_aggregate)
 
         family_aggregate.add_family_member(user_aggregate_id=user_aggregate.id),
@@ -266,6 +289,9 @@ class UserManagerApp(Application):
             logger.info(f"Received and Processed Fake Event={event}")
 
 
+f = UserAuthManagerEventFactory
+
+
 class UserAuthenticationApp(Application):
     def __init__(self):
         super().__init__()
@@ -274,8 +300,8 @@ class UserAuthenticationApp(Application):
     def handle_event(self, event: AppEvent):
         raise NotImplementedError()
 
-    @handle_event.register(UserAuthManagerEventFactory.UserAuthRequestEvent)
-    def _(self, event: UserAuthManagerEventFactory.UserAuthRequestEvent):
+    @handle_event.register(f.CognitoAuthRequestEvent)
+    def _(self, event: f.CognitoAuthRequestEvent):
         logger.info(f'Processing Event {event}')
         cognito_client = get_cognito_idp_client()
 
@@ -295,3 +321,7 @@ class UserAuthenticationApp(Application):
 
         logger.info(f"Authenticated: {event.username}")
         return initiate_auth_results.get("AuthenticationResult")
+
+    @handle_event.register(f.LocalAuthRequestEvent)
+    def _(self, event: f.LocalAuthRequestEvent):
+        pass
