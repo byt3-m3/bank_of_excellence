@@ -87,8 +87,8 @@ class BankManagerApp(Application):
         transcoder.register(BankTransactionMethodEnumTranscoding())
 
     def _save_aggregate(self, aggregate):
-        self.save(aggregate)
         self.write_model.save_bank_aggregate(aggregate=aggregate)
+        self.save(aggregate)
 
     @singledispatchmethod
     def handle_event(self, event):

@@ -67,6 +67,9 @@ def create_family_local_event(family_uuid):
 
 
 def test_user_manager_app_when_handling_create_family_local_user_event(
+        write_model_mock,
+        pika_client_mock,
+
         user_manager_app,
         create_family_local_event
 ):
