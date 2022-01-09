@@ -27,6 +27,7 @@ class UserManagerWorkerClient(PikaPublisherClient):
             last_name: str,
             dob: datetime,
             email: str,
+            desired_username: str,
             account_type: UserAccountTypeEnum,
             family_id: UUID = None
     ):
@@ -40,7 +41,7 @@ class UserManagerWorkerClient(PikaPublisherClient):
             account_type=account_type.value,
             password_hash=password_hash.decode(),
             dob=dob,
-
+            desired_username=desired_username
         )
 
         self.publish_event(event)

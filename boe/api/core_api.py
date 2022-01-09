@@ -159,6 +159,7 @@ def register_family_local():
                 password_hash=payload.get("password_hash").encode(),
                 email=payload.get("email"),
                 dob=payload.get("dob"),
+                desired_username=payload.get("desired_username"),
 
             )
             return build_json_response(status=http.HTTPStatus.OK, payload={"family_id": str(family_id)})
