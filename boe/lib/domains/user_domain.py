@@ -226,10 +226,11 @@ class UserDomainWriteModel:
         except DuplicateKeyError:
             update_item(new_values=serialized_aggregate, item_id=_record_id, collection=collection)
 
-    def save_local_credential(self, username: str, password_hash: bytes):
+    def save_local_credential(self, username: str, password_hash: bytes, user_id: UUID):
         serialized_cred = serialize_object_to_dict({
             "_id": username,
-            "password_hash": password_hash
+            "password_hash": password_hash,
+            "user_id": user_id
         })
 
         collection = get_collection(database=self.db, collection=CREDENTIAL_STORE_TABLE)
@@ -347,6 +348,12 @@ class UserDomainQueryModel:
                 password_hash=record['credential'].get("password_hash", '').encode(),
                 token=record['credential'].get("token", '').encode()
             )
+
+    def get_local_credential_by_username(self, username: str):
+        collection = get_collection(database=self.db, collection=CREDENTIAL_STORE_TABLE)
+
+        cursor = list(get_item(collection=collection, item_id=username, item_key="_id"))
+        print(cursor)
 
 
 class UserDomainFactory:
