@@ -62,7 +62,8 @@ def create_family_local_event(family_uuid):
         last_name='test_name',
         dob=datetime.datetime(month=9, day=10, year=1980).isoformat(),
         password_hash=b'TEST_PASSWORD',
-        email='test@email.com'
+        email='test@email.com',
+        desired_username='my_username'
     )
 
 
