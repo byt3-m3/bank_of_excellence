@@ -113,6 +113,7 @@ class UserManagerAppEventFactory:
         family_name: str
         first_name: str
         last_name: str
+        desired_username: str
         email: str
         password_hash: bytes
         dob: datetime
@@ -134,6 +135,7 @@ class UserManagerAppEventFactory:
             password_hash: bytes,
             account_type: int,
             dob: str,
+            desired_username: str
     ) -> 'UserManagerAppEventFactory.CreateFamilyLocalUserEvent':
         return cls.CreateFamilyLocalUserEvent(
             family_id=UUID(family_id),
@@ -143,7 +145,8 @@ class UserManagerAppEventFactory:
             email=email,
             family_name=family_name,
             account_type=UserAccountTypeEnum(account_type),
-            dob=datetime.fromisoformat(dob)
+            dob=datetime.fromisoformat(dob),
+            desired_username=desired_username
         )
 
 
@@ -254,7 +257,7 @@ class UserManagerApp(Application):
             family_id=event.family_id,
             password_hash=event.password_hash,
             email=event.email,
-            username=f'{event.first_name}_{event.last_name}',
+            username=event.desired_username,
             account_type=event.account_type,
             dob=event.dob,
             _id=event.family_id
