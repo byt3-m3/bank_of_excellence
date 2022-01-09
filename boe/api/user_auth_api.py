@@ -5,11 +5,13 @@ from boe.applications.user_domain_apps import (
     UserAuthManagerEventFactory,
     NewPasswordRequiredError
 )
+from boe.lib.domains.user_domain import UserDomainQueryModel
 from boe.env import COGNITO_APP_CLIENT_ID
 from cbaxter1988_utils.flask_utils import build_json_response
 from cbaxter1988_utils.log_utils import get_logger
 from flask import Flask, request
 from flask_cors import CORS
+from boe.utils.password_utils import get_key_salt_from_value, verify_password_hash
 
 logger = get_logger("UserAuthAPI")
 
@@ -41,7 +43,29 @@ def authenticate_cognito_user():
 
 @app.route("/api/v1/auth/local/basic", methods=['POST'])
 def authenticate_local_user():
-    pass
+    body = request.json
+
+    query_model = UserDomainQueryModel()
+    creds = query_model.get_local_credential_by_username(username=body['LocalAuthRequest'].get("username"))
+    if not creds:
+        return build_json_response(
+            status=http.HTTPStatus.EXPECTATION_FAILED,
+            payload={"msg": "Invalid Username or Password"}
+        )
+
+    key, salt = get_key_salt_from_value(stored_key=creds.password_hash)
+
+    return build_json_response(
+        status=http.HTTPStatus.OK,
+        payload={
+            "auth_result": verify_password_hash(
+                password=body['LocalAuthRequest'].get("password"),
+                old_key=key,
+                salt=salt
+            ),
+            "id": str(creds.user_id)
+        }
+    )
 
 
 if __name__ == '__main__':

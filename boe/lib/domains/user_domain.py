@@ -1,3 +1,4 @@
+import base64
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
@@ -68,7 +69,6 @@ class Credential:
 class LocalCredential(Credential):
     username: str
     password_hash: bytes
-    access_token: bytes = None
 
 
 @dataclass
@@ -357,7 +357,7 @@ class UserDomainQueryModel:
         if len(cursor) == 1:
             return self.LocalCredentialModel(
                 username=cursor[0].get("_id"),
-                password_hash=cursor[0].get("password_hash"),
+                password_hash=bytes.fromhex(cursor[0].get("password_hash")),
                 user_id=UUID(cursor[0].get("user_id")),
             )
 
@@ -460,6 +460,6 @@ class UserDomainFactory:
             dob=dob,
             credential=UserDomainFactory.build_local_credentials(
                 username=username,
-                password_hash=password_hash
+                password_hash=password_hash,
             )
         )

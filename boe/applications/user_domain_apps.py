@@ -40,6 +40,8 @@ from cbaxter1988_utils.aws_cognito_utils import add_new_user_basic, get_cognito_
 from cbaxter1988_utils.log_utils import get_logger
 from eventsourcing.application import Application
 from eventsourcing.persistence import Transcoder
+from boe.utils.password_utils import hash_password
+
 
 logger = get_logger("UserManagerApp")
 
@@ -115,7 +117,7 @@ class UserManagerAppEventFactory:
         last_name: str
         desired_username: str
         email: str
-        password_hash: bytes
+        password: str
         dob: datetime
 
     @dataclass(frozen=True)
@@ -132,7 +134,7 @@ class UserManagerAppEventFactory:
             last_name: str,
             email: str,
             family_name: str,
-            password_hash: bytes,
+            password: str,
             account_type: int,
             dob: str,
             desired_username: str
@@ -141,7 +143,7 @@ class UserManagerAppEventFactory:
             family_id=UUID(family_id),
             first_name=first_name,
             last_name=last_name,
-            password_hash=password_hash,
+            password=password,
             email=email,
             family_name=family_name,
             account_type=UserAccountTypeEnum(account_type),
@@ -251,17 +253,19 @@ class UserManagerApp(Application):
             members=[]
         )
 
+        _password_hash = hash_password(password=event.password).hex()
+        logger.debug("converted hash to Hex")
+
         user_aggregate = self.factory.build_user_account_aggregate_w_local_credential(
             last_name=event.last_name,
             first_name=event.first_name,
             family_id=event.family_id,
-            password_hash=event.password_hash,
+            password_hash=_password_hash,
             email=event.email,
             username=event.desired_username,
             account_type=event.account_type,
             dob=event.dob,
             _id=event.family_id
-
         )
 
         self._save_aggregate(aggregate=family_aggregate)
@@ -275,7 +279,8 @@ class UserManagerApp(Application):
         self.write_model.save_local_credential(
             username=user_aggregate.credential.username,
             password_hash=user_aggregate.credential.password_hash,
-            user_id=user_aggregate.id
+            user_id=user_aggregate.id,
+
         )
 
         family_aggregate.add_family_member(user_aggregate_id=user_aggregate.id),

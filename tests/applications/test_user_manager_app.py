@@ -9,24 +9,32 @@ from boe.applications.user_domain_apps import (
     SubscriptionTypeEnum,
     UserManagerAppEventFactory
 )
+from boe.lib.domains.user_domain import UserDomainQueryModel
 from pytest import fixture
+from boe.utils.password_utils import hash_password, verify_password_hash, get_key_salt_from_value
+import base64
 
 
 @fixture
 def metric_publisher_mock():
-    with patch("boe.applications.user_domain_apps.ServiceMetricPublisher") as client_mock:
+    with patch("boe.applications.user_domain_apps.ServiceMetricPublisher", autospec=True) as client_mock:
         yield client_mock
 
 
 @fixture
 def write_model_mock():
-    with patch("boe.applications.user_domain_apps.UserDomainWriteModel") as client_mock:
+    with patch("boe.applications.user_domain_apps.UserDomainWriteModel", autospec=True) as client_mock:
+        yield client_mock
+
+@fixture
+def query_model_mock():
+    with patch("boe.lib.domains.user_domain.UserDomainQueryModel", autospec=True) as client_mock:
         yield client_mock
 
 
 @fixture
 def notification_worker_client_mock():
-    with patch("boe.applications.user_domain_apps.NotificationWorkerClient") as client_mock:
+    with patch("boe.applications.user_domain_apps.NotificationWorkerClient", autospec=True) as client_mock:
         yield client_mock
 
 
@@ -61,13 +69,13 @@ def create_family_local_event(family_uuid):
         first_name='test_name',
         last_name='test_name',
         dob=datetime.datetime(month=9, day=10, year=1980).isoformat(),
-        password_hash=b'TEST_PASSWORD',
+        password='TEST_PASSWORD',
         email='test@email.com',
         desired_username='my_username'
     )
 
 
-def test_user_manager_app_when_handling_create_family_local_user_event(
+def _test_user_manager_app_when_handling_create_family_local_user_event(
         write_model_mock,
         pika_client_mock,
 
@@ -76,3 +84,11 @@ def test_user_manager_app_when_handling_create_family_local_user_event(
 ):
     testable = user_manager_app
     testable.handle_event(create_family_local_event)
+
+    # model = UserDomainQueryModel()
+    #
+    # result = model.get_local_credential_by_username(username=create_family_local_event.desired_username)
+    #
+    # key, salt = get_key_salt_from_value(stored_key=result.password_hash)
+    #
+    # assert verify_password_hash(password=create_family_local_event.password, old_key=key, salt=salt) is True

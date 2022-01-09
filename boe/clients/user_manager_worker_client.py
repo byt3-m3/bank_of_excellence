@@ -39,7 +39,7 @@ class UserManagerWorkerClient(PikaPublisherClient):
             first_name=first_name,
             email=email,
             account_type=account_type.value,
-            password_hash=password_hash.decode(),
+            password=password_hash.decode(),
             dob=dob,
             desired_username=desired_username
         )
