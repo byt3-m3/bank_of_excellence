@@ -1,8 +1,9 @@
 import datetime
+import uuid
 from typing import Union
 from uuid import UUID
 
-from boe.applications.user_domain_apps import UserManagerAppEventFactory, SubscriptionTypeEnum
+from boe.applications.user_domain_apps import UserManagerAppEventFactory, SubscriptionTypeEnum, UserAccountTypeEnum
 from boe.clients.client import PikaPublisherClient
 from boe.env import BOE_APP_EXCHANGE, USER_MANAGER_QUEUE_ROUTING_KEY
 
@@ -18,91 +19,29 @@ class UserManagerWorkerClient(PikaPublisherClient):
         )
         self.event_factory = UserManagerAppEventFactory()
 
-    def publish_new_family_event(
+    def publish_create_family_local_user_event(
             self,
-            name: str,
-            description: str,
-            subscription_type: Union[SubscriptionTypeEnum, int],
+            family_name: str,
+            password_hash: bytes,
             first_name: str,
             last_name: str,
             dob: datetime,
             email: str,
-            id: str
+            account_type: UserAccountTypeEnum,
+            family_id: UUID = None
     ):
-        event = self.event_factory.build_new_family_event(
-            description=description,
-            subscription_type=SubscriptionTypeEnum(subscription_type),
-            name=name,
-            first_name=first_name,
+        _family_id = uuid.uuid4() if family_id is None else family_id
+        event = self.event_factory.build_create_family_local_event(
+            family_id=str(_family_id),
+            family_name=family_name,
             last_name=last_name,
-            dob=dob.isoformat() if isinstance(dob, datetime.datetime) else dob,
+            first_name=first_name,
             email=email,
-            family_id=id
-        )
-        return self.publish_event(event=event)
-
-    def publish_new_child_event(
-            self,
-            first_name: str,
-            last_name: str,
-            email: str,
-            grade: int,
-            dob: datetime.datetime,
-            family_id: UUID,
-            child_id: UUID
-
-    ):
-        event = self.event_factory.build_new_child_account_event(
+            account_type=account_type.value,
+            password_hash=password_hash.decode(),
             dob=dob,
-            email=email,
-            family_id=str(family_id),
-            first_name=first_name,
-            last_name=last_name,
-            grade=grade,
-            child_id=str(child_id)
 
         )
 
-        self.publish_event(event=event)
-
-    def publish_subscription_change_event(
-            self,
-            subscription_type: SubscriptionTypeEnum,
-            family_id: UUID
-    ):
-        event = self.event_factory.build_family_subscription_change_event(
-            family_id=str(family_id),
-            subscription_type=SubscriptionTypeEnum(subscription_type)
-
-        )
-
-        self.publish_event(event=event)
-
-    def publish_create_cognito_user_event(self, email: str, username: str, is_real: bool):
-        event = self.event_factory.build_create_cognito_user_event(
-            email=email,
-            username=username,
-            is_real=is_real
-        )
-
-        self.publish_event(event=event)
-
-    def publish_new_adult_account_event(
-            self,
-            first_name: str,
-            last_name: str,
-            email: str,
-            dob: datetime.datetime,
-            family_id: UUID,
-            adult_id: UUID
-    ):
-        event = self.event_factory.build_new_adult_account_event(
-            email=email,
-            family_id=str(family_id),
-            first_name=first_name,
-            last_name=last_name,
-            dob=dob,
-            adult_id=str(adult_id)
-        )
-
-        self.publish_event(event=event)
+        self.publish_event(event)
+        return _family_id

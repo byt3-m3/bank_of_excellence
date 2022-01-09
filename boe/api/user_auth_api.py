@@ -18,8 +18,8 @@ app = Flask(__name__)
 CORS(app)
 
 
-@app.route("/api/v1/auth/basic", methods=['POST'])
-def authenticate_user():
+@app.route("/api/v1/auth/cognito/basic", methods=['POST'])
+def authenticate_cognito_user():
     body = request.json
 
     app = UserAuthenticationApp()
@@ -27,7 +27,7 @@ def authenticate_user():
         if event_name == 'UserAuthRequestEvent':
             try:
                 auth_results = app.handle_event(
-                    UserAuthManagerEventFactory.build_user_auth_request_event(
+                    UserAuthManagerEventFactory.build_cognito_auth_request_event(
                         username=payload.get("username"),
                         password=payload.get("password"),
                         client_id=COGNITO_APP_CLIENT_ID
@@ -37,6 +37,11 @@ def authenticate_user():
                 return build_json_response(http.HTTPStatus.OK, auth_results)
             except NewPasswordRequiredError:
                 return build_json_response(http.HTTPStatus.EXPECTATION_FAILED, {"msg": "New Password Required"})
+
+
+@app.route("/api/v1/auth/local/basic", methods=['POST'])
+def authenticate_local_user():
+    pass
 
 
 if __name__ == '__main__':

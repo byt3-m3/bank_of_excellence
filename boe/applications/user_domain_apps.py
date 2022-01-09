@@ -10,6 +10,10 @@ from boe.applications.transcodings import (
     FamilyEntityTranscoding,
     SubscriptionTypeEnumTranscoding,
     UserAccountTypeEnumTranscoding,
+    UserAccountEntityTranscoding,
+    LocalCredentialTranscoding,
+    CredentialTypeEnumTranscoding,
+    BytesTranscoding
 
 )
 from boe.clients.client import PikaPublisherClient
@@ -25,8 +29,10 @@ from boe.env import (
 from boe.lib.common_models import AppEvent, AppNotification
 from boe.lib.domains.user_domain import (
     UserDomainFactory,
+    UserAccountTypeEnum,
     SubscriptionTypeEnum,
-    FamilyUserAggregate,
+    FamilyAggregate,
+    UserAccountAggregate,
     UserDomainWriteModel
 )
 from boe.metrics import ServiceMetricPublisher
@@ -100,127 +106,86 @@ class FamilyCreatedNotification(AppNotification):
 
 
 class UserManagerAppEventFactory:
+    @dataclass(frozen=True)
+    class CreateFamilyLocalUserEvent(AppEvent):
+        family_id: UUID
+        account_type: UserAccountTypeEnum
+        family_name: str
+        first_name: str
+        last_name: str
+        email: str
+        password_hash: bytes
+        dob: datetime
 
-    @staticmethod
-    def build_new_family_event(
-            description: str,
-            name: str,
+    @dataclass(frozen=True)
+    class CreateCognitoUserEvent(AppEvent):
+        username: str
+        email: str
+        is_real: bool = False
+
+    @classmethod
+    def build_create_family_local_event(
+            cls,
+            family_id: str,
             first_name: str,
             last_name: str,
             email: str,
+            family_name: str,
+            password_hash: bytes,
+            account_type: int,
             dob: str,
-            subscription_type: Union[SubscriptionTypeEnum, int] = SubscriptionTypeEnum.basic,
-            family_id: str = None
-
-    ):
-
-        if family_id:
-            family_id = UUID(family_id)
-
-        return NewFamilyEvent(
-            description=description,
-            name=name,
-            subscription_type=SubscriptionTypeEnum(subscription_type),
+    ) -> 'UserManagerAppEventFactory.CreateFamilyLocalUserEvent':
+        return cls.CreateFamilyLocalUserEvent(
+            family_id=UUID(family_id),
             first_name=first_name,
             last_name=last_name,
+            password_hash=password_hash,
             email=email,
-            dob=datetime.fromisoformat(dob),
-            family_id=family_id
-        )
-
-    @staticmethod
-    def build_new_child_account_event(
-            family_id: str,
-            dob: datetime,
-            last_name: str,
-            first_name: str,
-            email: str,
-            grade: int,
-            child_id: str = None
-    ):
-        if child_id:
-            child_id = UUID(child_id)
-
-        return NewChildAccountEvent(
-            family_id=UUID(family_id),
-            dob=dob,
-            last_name=last_name,
-            first_name=first_name,
-            email=email,
-            grade=grade,
-            child_id=child_id
-        )
-
-    @staticmethod
-    def build_new_adult_account_event(
-            family_id: str,
-            adult_id: str,
-            dob: datetime,
-            last_name: str,
-            first_name: str,
-            email: str,
-    ):
-        return NewAdultAccountEvent(
-            family_id=UUID(family_id),
-            dob=dob if isinstance(dob, datetime) else datetime.fromisoformat(dob),
-            last_name=last_name,
-            first_name=first_name,
-            email=email,
-            adult_id=UUID(adult_id)
-        )
-
-    @staticmethod
-    def build_family_subscription_change_event(
-            family_id: str,
-            subscription_type: Union[int, SubscriptionTypeEnum]
-    ):
-        return FamilySubscriptionChangeEvent(
-            family_id=UUID(family_id),
-            subscription_type=SubscriptionTypeEnum(subscription_type)
-
-        )
-
-    @staticmethod
-    def build_child_created_notification(child_id: str, family_id: str) -> ChildCreatedNotification:
-        return ChildCreatedNotification(
-            child_id=child_id,
-            family_id=family_id
-        )
-
-    @staticmethod
-    def build_family_created_notification(aggregate_id: str) -> FamilyCreatedNotification:
-        return FamilyCreatedNotification(
-            aggregate_id=aggregate_id
-        )
-
-    @staticmethod
-    def build_create_cognito_user_event(email: str, username: str, is_real: bool = False) -> CreateCognitoUserEvent:
-        return CreateCognitoUserEvent(
-            email=email,
-            username=username,
-            is_real=is_real
+            family_name=family_name,
+            account_type=UserAccountTypeEnum(account_type),
+            dob=datetime.fromisoformat(dob)
         )
 
 
 class UserAuthManagerEventFactory:
     @dataclass(frozen=True)
-    class UserAuthRequestEvent(AppEvent):
+    class CognitoAuthRequestEvent(AppEvent):
         username: str
         password: str
         client_id: str
 
+    @dataclass(frozen=True)
+    class LocalAuthRequestEvent(AppEvent):
+        username: str
+        password_hash: str
+
     @classmethod
-    def build_user_auth_request_event(
+    def build_cognito_auth_request_event(
             cls,
             username: str,
             client_id: str,
             password: str
     ):
-        return cls.UserAuthRequestEvent(
+        return cls.CognitoAuthRequestEvent(
             username=username,
             password=password,
             client_id=client_id
         )
+
+    @classmethod
+    def build_local_auth_request_event(
+            cls,
+            username: str,
+            password_hash: bytes
+    ):
+        return cls.LocalAuthRequestEvent(
+            username=username,
+            password_hash=password_hash.decode(),
+
+        )
+
+
+f = UserManagerAppEventFactory
 
 
 class UserManagerApp(Application):
@@ -252,15 +217,19 @@ class UserManagerApp(Application):
         transcoder.register(FamilyEntityTranscoding())
         transcoder.register(SubscriptionTypeEnumTranscoding())
         transcoder.register(UserAccountTypeEnumTranscoding())
+        transcoder.register(UserAccountEntityTranscoding())
+        transcoder.register(LocalCredentialTranscoding())
+        transcoder.register(CredentialTypeEnumTranscoding())
+        transcoder.register(BytesTranscoding())
 
-    def _get_family_aggregate(self, family_id: UUID) -> FamilyUserAggregate:
+    def _get_family_aggregate(self, family_id: UUID) -> FamilyAggregate:
         return self.repository.get(aggregate_id=family_id)
 
-    def _save_aggregate(self, aggregate: FamilyUserAggregate):
-        self.save(aggregate)
+    def _save_aggregate(self, aggregate: Union[FamilyAggregate, UserAccountAggregate]):
 
         try:
-            self.write_model.save_family_user_aggregate(aggregate=aggregate)
+            self.write_model.save_aggregate(aggregate)
+            self.save(aggregate)
         except Exception:
             logger.error(f"Trouble Saving Aggregate {aggregate}")
             raise
@@ -269,114 +238,43 @@ class UserManagerApp(Application):
     def handle_event(self, event):
         raise NotImplementedError("Invalid Event")
 
-    @handle_event.register(NewFamilyEvent)
-    def _handle_new_family_event(self, event: NewFamilyEvent):
-        aggregate = self.factory.build_user_family_user_aggregate(
-            description=event.description,
-            name=event.name,
-            subscription_type=event.subscription_type,
-            family_id=str(event.family_id)
+    @handle_event.register(f.CreateFamilyLocalUserEvent)
+    def _(self, event: f.CreateFamilyLocalUserEvent):
+        family_aggregate = self.factory.build_family_aggregate(
+            _id=event.family_id,
+            description=event.family_name,
+            name=event.family_name,
+            subscription_type=SubscriptionTypeEnum.basic,
+            members=[]
         )
 
-        self._save_aggregate(aggregate=aggregate)
+        user_aggregate = self.factory.build_user_account_aggregate_w_local_credential(
+            last_name=event.last_name,
+            first_name=event.first_name,
+            family_id=event.family_id,
+            password_hash=event.password_hash,
+            email=event.email,
+            username=f'{event.first_name}_{event.last_name}',
+            account_type=event.account_type,
+            dob=event.dob,
+            _id=event.family_id
 
-        self.user_manager_pika_client.publish_event(
-            event=UserManagerAppEventFactory.build_new_adult_account_event(
-                family_id=str(aggregate.id),
-                last_name=event.last_name,
-                first_name=event.first_name,
-                email=event.email,
-                dob=event.dob,
-                adult_id=str(uuid.uuid4())
-            )
         )
 
+        self._save_aggregate(aggregate=family_aggregate)
         self.store_manager_pika_client.publish_event(
             event=StoreManagerAppEventFactory.build_new_store_event(
-                family_id=str(aggregate.id),
+                family_id=str(family_aggregate.id),
 
             )
         )
+        self._save_aggregate(aggregate=user_aggregate)
 
-        self.metric_publisher.incr_family_created_success_metric(service_name=self._service_name)
-        return aggregate.id
+        family_aggregate.add_family_member(user_aggregate_id=user_aggregate.id),
+        self._save_aggregate(family_aggregate)
 
-    @handle_event.register(NewChildAccountEvent)
-    def _handle_new_child_account_event(self, event: NewChildAccountEvent):
-        aggregate: FamilyUserAggregate = self.repository.get(aggregate_id=event.family_id)
-
-        aggregate.create_new_child_member(
-            dob=event.dob,
-            email=event.email,
-            first_name=event.first_name,
-            last_name=event.last_name,
-            grade=event.grade,
-            _id=event.child_id
-        )
-        child_account = aggregate.members[len(aggregate.members) - 1]
-
-        self._save_aggregate(aggregate=aggregate)
-
-        self.user_manager_pika_client.publish_event(
-            event=CreateCognitoUserEvent(
-                email=event.email,
-                username=f'{event.first_name}_{event.last_name}'.lower(),
-                is_real=False if STAGE in ['LOCAL', 'BETA'] else True
-            )
-        )
-        self.notification_service_client.publish_event(
-            event=UserManagerAppEventFactory.build_child_created_notification(
-                child_id=str(child_account.id),
-                family_id=str(aggregate.id),
-
-            )
-        )
-        self.metric_publisher.incr_child_user_account_created_success_metric(service_name=self._service_name)
-        return aggregate.id
-
-    @handle_event.register(NewAdultAccountEvent)
-    def _handle_new_adult_account_event(self, event: NewAdultAccountEvent):
-        aggregate: FamilyUserAggregate = self.repository.get(aggregate_id=event.family_id)
-
-        aggregate.create_new_adult_member(
-            dob=event.dob,
-            email=event.email,
-            first_name=event.first_name,
-            last_name=event.last_name,
-            _id=event.adult_id
-        )
-
-        self._save_aggregate(aggregate=aggregate)
-
-        self.user_manager_pika_client.publish_event(
-            event=CreateCognitoUserEvent(
-                email=event.email,
-                username=f'{event.first_name}_{event.last_name}'.lower(),
-                is_real=False if STAGE in ['LOCAL', 'BETA'] else True
-            )
-        )
-        self.metric_publisher.incr_adult_user_account_created_success_metric(service_name=self._service_name)
-        return aggregate.id
-
-    @handle_event.register(FamilySubscriptionChangeEvent)
-    def _handle_family_subscription_change_event(self, event: FamilySubscriptionChangeEvent):
-        aggregate = self._get_family_aggregate(family_id=event.family_id)
-        if event.subscription_type == aggregate.family.subscription_type:
-            logger.error(f"Family Subscription Already Set: '{aggregate.family.subscription_type}', Rejecting Event")
-            return
-
-        aggregate.change_subscription_type(subscription_type=event.subscription_type)
-
-        self._save_aggregate(aggregate=aggregate)
-        if event.subscription_type == SubscriptionTypeEnum.premium:
-            self.metric_publisher.incr_family_subscription_upgrade_success_metric(service_name=self._service_name)
-
-        if event.subscription_type == SubscriptionTypeEnum.basic:
-            self.metric_publisher.incr_family_subscription_downgrade_success_metric(service_name=self._service_name)
-        return aggregate.id
-
-    @handle_event.register(CreateCognitoUserEvent)
-    def _handle_create_cognito_user_event(self, event: CreateCognitoUserEvent):
+    @handle_event.register(f.CreateCognitoUserEvent)
+    def _(self, event: f.CreateCognitoUserEvent):
         if event.is_real:
             add_new_user_basic(
                 pool_id=COGNITO_POOL_ID,
@@ -391,6 +289,9 @@ class UserManagerApp(Application):
             logger.info(f"Received and Processed Fake Event={event}")
 
 
+f = UserAuthManagerEventFactory
+
+
 class UserAuthenticationApp(Application):
     def __init__(self):
         super().__init__()
@@ -399,9 +300,8 @@ class UserAuthenticationApp(Application):
     def handle_event(self, event: AppEvent):
         raise NotImplementedError()
 
-    @handle_event.register(UserAuthManagerEventFactory.UserAuthRequestEvent)
-    def _(self, event: UserAuthManagerEventFactory.UserAuthRequestEvent):
-
+    @handle_event.register(f.CognitoAuthRequestEvent)
+    def _(self, event: f.CognitoAuthRequestEvent):
         logger.info(f'Processing Event {event}')
         cognito_client = get_cognito_idp_client()
 
@@ -421,3 +321,7 @@ class UserAuthenticationApp(Application):
 
         logger.info(f"Authenticated: {event.username}")
         return initiate_auth_results.get("AuthenticationResult")
+
+    @handle_event.register(f.LocalAuthRequestEvent)
+    def _(self, event: f.LocalAuthRequestEvent):
+        pass

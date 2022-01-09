@@ -1,3 +1,4 @@
+import os
 from unittest.mock import patch
 from uuid import uuid4
 
@@ -62,7 +63,9 @@ def test_bank_manager_app_when_handle_establish_new_account_event(
     _id = app.handle_event(event)
 
     aggregate = app.repository.get(_id)
+
     assert isinstance(aggregate, BankDomainAggregate)
+
     write_model_mock.assert_called()
     notification_worker_client_mock.assert_called()
     metric_publisher_mock.assert_called()
@@ -91,6 +94,7 @@ def test_bank_manager_app_when_handling_new_transaction_event(
 
     assert isinstance(aggregate, BankDomainAggregate)
     assert aggregate.bank_account.balance == 6
+
     write_model_mock.assert_called()
     notification_worker_client_mock.assert_called()
     metric_publisher_mock.assert_called()

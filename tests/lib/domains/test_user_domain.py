@@ -1,64 +1,86 @@
-from base64 import b64encode
+import uuid
 from datetime import datetime
-from uuid import UUID
 
 import pytest
 from boe.lib.domains.user_domain import (
-    FamilyEntity,
+
     SubscriptionTypeEnum,
+    UserAccountAggregate,
     UserDomainFactory,
     UserDomainWriteModel,
     UserDomainQueryModel,
-    FamilyUserAggregate,
-    UserAccount,
-    Credential,
-    CredentialTypeEnum,
+    FamilyAggregate,
+
     UserAccountTypeEnum
 )
-from boe.utils.serialization_utils import serialize_object_to_dict
 from pytest import fixture
+from unittest.mock import patch
+
+
+@fixture()
+def add_item_utils_mock():
+    with patch("boe.lib.domains.user_domain.add_item", autospec=True) as mock:
+        yield mock
+
+
+@fixture()
+def update_item_utils_mock():
+    with patch("boe.lib.domains.user_domain.update_item", autospec=True) as mock:
+        yield mock
+
+
+@fixture()
+def get_item_utils_mock():
+    with patch("boe.lib.domains.user_domain.get_item", autospec=True) as mock:
+        yield mock
 
 
 @fixture
-def family_aggregate_dict():
-    return {
-        "_id": UUID("8882518b-8866-4474-9264-ce920dff8acf"),
-        "family": {
-            "id": UUID("8882518b-8866-4474-9264-ce920dff8acf"),
-            "name": "TEST_NAME",
-            "description": "TEST_DESCRIPTION",
-            "subscription_type": 0
-        },
-        "member_map": {
-            "1f939a5c-d622-43ae-87f2-ce7625ab9947": {
-                "id": UUID("1f939a5c-d622-43ae-87f2-ce7625ab9947"),
-                "account_type": {},
-                "account_detail": {
-                    "first_name": "test_firstname",
-                    "last_name": "test_lastname",
-                    "email": "test_email",
-                    "dob": datetime.now(),
-                    "age": 7,
-                    "grade": 2
-                }
-            }
-        },
-        "version": 2
-    }
+def user_account_aggregate_w_local_credentials_adult(family_aggregate):
+    return UserDomainFactory.build_user_account_aggregate_w_local_credential(
+        account_type=UserAccountTypeEnum.adult,
+        first_name='john',
+        last_name='doe',
+        username='john_doe',
+        family_id=family_aggregate.id,
+        password_hash=b'fake_password',
+        email='test@gamil.com',
+        dob=datetime(month=9, day=15, year=1970)
+    )
 
 
 @fixture
-def family_user_aggregate():
-    return UserDomainFactory.build_user_family_user_aggregate(
+def user_account_aggregate_w_local_credentials_child(family_aggregate):
+    return UserDomainFactory.build_user_account_aggregate_w_local_credential(
+        account_type=UserAccountTypeEnum.child,
+        first_name='jane',
+        last_name='doe',
+        username='jane_doe',
+        family_id=family_aggregate.id,
+        password_hash=b'fake_password',
+        email='test@gamil.com',
+        dob=datetime(month=9, day=15, year=2015)
+    )
+
+
+@fixture
+def family_aggregate(
+
+):
+    return UserDomainFactory.build_family_aggregate(
         description='TEST_DESCRIPTION',
         name="TEST_FAMILY",
-        subscription_type=SubscriptionTypeEnum.basic
+        subscription_type=SubscriptionTypeEnum.basic,
+        _id=uuid.uuid4(),
+        members=[
+
+        ]
     )
 
 
 @fixture
 def child_member_account_testable(family_user_aggregate):
-    return UserDomainFactory.build_user_account(
+    return UserDomainFactory.build_user_account_entity(
         account_type=UserAccountTypeEnum.child,
         first_name='TEST_NAME',
         last_name="TEST_LAST",
@@ -79,111 +101,162 @@ def user_domain_query_model() -> UserDomainQueryModel:
     return UserDomainQueryModel()
 
 
-@fixture
-def family_testable(uuid4_1) -> FamilyEntity:
-    return UserDomainFactory.rebuild_family(
-        _id=uuid4_1,
-        name='TEST',
-        members=[],
-        description='TEST',
-        subscription_type=SubscriptionTypeEnum.premium
+def test_user_account_aggregate_when_created_adult(user_account_aggregate_w_local_credentials_adult):
+    testable = user_account_aggregate_w_local_credentials_adult
+
+    assert testable.user_entity.account_type is UserAccountTypeEnum.adult
+    assert isinstance(testable, UserAccountAggregate)
+
+
+def test_user_account_aggregate_when_created_child(user_account_aggregate_w_local_credentials_child):
+    testable = user_account_aggregate_w_local_credentials_child
+
+    assert testable.user_entity.account_type is UserAccountTypeEnum.child
+    assert isinstance(testable, UserAccountAggregate)
+
+
+def test_user_account_aggregate_when_updating_token(user_account_aggregate_w_local_credentials_adult):
+    testable = user_account_aggregate_w_local_credentials_adult
+    testable.update_local_credential_access_token(token=b'NEW_TOKEN')
+
+    assert len(testable.pending_events) == 2
+    assert testable.credential.access_token == b'NEW_TOKEN'
+
+
+def test_user_account_aggregate_when_updating_password(user_account_aggregate_w_local_credentials_adult):
+    testable = user_account_aggregate_w_local_credentials_adult
+    testable.update_local_credential_password(password_hash=b'NEW_PASSWORD')
+
+    assert len(testable.pending_events) == 2
+    assert testable.credential.password_hash == b'NEW_PASSWORD'
+
+
+def test_family_aggregate_when_created(family_aggregate):
+    testable = family_aggregate
+
+    assert isinstance(testable, FamilyAggregate)
+
+
+def test_family_aggregate_when_adding_accounts(
+        family_aggregate,
+        user_account_aggregate_w_local_credentials_adult,
+        user_account_aggregate_w_local_credentials_child
+):
+    testable = family_aggregate
+
+    testable.add_family_member(
+        user_aggregate_id=user_account_aggregate_w_local_credentials_adult.id
     )
 
+    testable.add_family_member(
+        user_aggregate_id=user_account_aggregate_w_local_credentials_child.id
+    )
 
-def test_family_user_aggregate_when_create(family_user_aggregate):
-    aggregate: FamilyUserAggregate = family_user_aggregate
+    assert testable.is_member(
+        member_id=user_account_aggregate_w_local_credentials_adult.id
+    ) is True
 
-    assert aggregate.id == aggregate.family.id
-    assert isinstance(aggregate.members, list)
+    assert testable.is_member(
+        member_id=user_account_aggregate_w_local_credentials_child.id
+    ) is True
 
-
-def test_family_user_aggregate_when_adding_child_member(family_user_aggregate, child_member_account_testable):
-    aggregate: FamilyUserAggregate = family_user_aggregate
-    aggregate.add_family_member(user_account=child_member_account_testable)
-
-    for member in aggregate.members:
-        assert isinstance(member, UserAccount)
-
-    assert len(aggregate.pending_events) == 2
-    assert len(aggregate.members) == 1
+    assert len(testable.members) == 2
 
 
-def test_family_user_aggregate_when_adding_member_duplicate(family_user_aggregate, child_member_account_testable):
-    aggregate: FamilyUserAggregate = family_user_aggregate
-    aggregate.add_family_member(user_account=child_member_account_testable)
+def test_family_aggregate_when_adding_duplicate_accounts(
+        family_aggregate,
+        user_account_aggregate_w_local_credentials_adult
+):
+    testable = family_aggregate
+
+    testable.add_family_member(
+        user_aggregate_id=user_account_aggregate_w_local_credentials_adult.id
+    )
+
     with pytest.raises(ValueError):
-        aggregate.add_family_member(user_account=child_member_account_testable)
+        testable.add_family_member(
+            user_aggregate_id=user_account_aggregate_w_local_credentials_adult.id
+        )
 
 
-def test_family_user_aggregate_when_removing_member(family_user_aggregate, child_member_account_testable):
-    aggregate: FamilyUserAggregate = family_user_aggregate
-    aggregate.add_family_member(user_account=child_member_account_testable)
-    aggregate.remove_family_member(user_id=child_member_account_testable.id)
+def test_family_aggregate_when_changing_subscription(
+        family_aggregate
+):
+    assert family_aggregate.family.subscription_type is SubscriptionTypeEnum.basic
 
-    assert len(aggregate.pending_events) == 3
-    assert len(aggregate.members) == 0
+    family_aggregate.change_family_subscription(subscription=SubscriptionTypeEnum.premium)
 
-
-def test_family_user_aggregate_when_changing_subscription_type(family_user_aggregate):
-    aggregate: FamilyUserAggregate = family_user_aggregate
-
-    assert aggregate.family.subscription_type is SubscriptionTypeEnum.basic
-    aggregate.change_subscription_type(subscription_type=SubscriptionTypeEnum.premium)
-
-    assert aggregate.family.subscription_type is SubscriptionTypeEnum.premium
+    assert family_aggregate.family.subscription_type is SubscriptionTypeEnum.premium
 
 
-def test_family_user_aggregate_when_creating_new_adult_member(family_user_aggregate):
-    aggregate: FamilyUserAggregate = family_user_aggregate
-    aggregate.create_new_adult_member(
-        first_name='TEST_NAME',
-        last_name='LAST_NAME',
-        email='TEST@EMAIL.COM',
-        dob=datetime(year=1988, month=9, day=6)
+def test_user_domain_write_model_when_saving_family_aggregate(
+        add_item_utils_mock,
+        family_aggregate,
+        user_account_aggregate_w_local_credentials_adult,
+        user_domain_write_model
+):
+    family_aggregate.add_family_member(user_aggregate_id=user_account_aggregate_w_local_credentials_adult.id)
+    user_domain_write_model.save_aggregate(family_aggregate)
+
+
+def test_user_domain_write_model_when_saving_user_account_aggregate(
+        add_item_utils_mock,
+        family_aggregate,
+        user_account_aggregate_w_local_credentials_adult,
+        user_domain_write_model
+):
+    user_domain_write_model.save_aggregate(family_aggregate)
+    user_domain_write_model.save_aggregate(user_account_aggregate_w_local_credentials_adult)
+
+
+def test_user_domain_query_model_when_fetching_family_by_id(
+        add_item_utils_mock,
+        get_item_utils_mock,
+        user_domain_query_model,
+        user_domain_write_model,
+        user_account_aggregate_w_local_credentials_adult,
+        family_aggregate
+):
+    family_aggregate.add_family_member(
+        user_aggregate_id=user_account_aggregate_w_local_credentials_adult.id
     )
+    user_domain_write_model.save_aggregate(family_aggregate)
 
-    assert len(aggregate.members) == 1
+    results = user_domain_query_model.get_family_by_id(family_aggregate_id=family_aggregate.id)
+
+    get_item_utils_mock.assert_called()
+    # assert isinstance(results, user_domain_query_model.BasicFamilyModel)
 
 
-def test_family_user_aggregate_when_creating_new_child_member(family_user_aggregate):
-    aggregate: FamilyUserAggregate = family_user_aggregate
+def test_user_domain_query_model_when_fetching_user_account_by_id(
+        add_item_utils_mock,
+        get_item_utils_mock,
+        user_domain_query_model,
+        user_domain_write_model,
+        user_account_aggregate_w_local_credentials_adult,
+        family_aggregate
+):
+    user_domain_write_model.save_aggregate(user_account_aggregate_w_local_credentials_adult)
 
-    aggregate.create_new_child_member(
-        first_name='TEST_NAME',
-        last_name='LAST_NAME',
-        email='TEST@EMAIL.COM',
-        dob=datetime(year=2014, month=12, day=20),
-        grade=5
+    results = user_domain_query_model.get_user_account_by_id(
+        user_aggregate_id=user_account_aggregate_w_local_credentials_adult.id
     )
-    # print(aggregate.members[0].credential.creds.username)
-    assert len(aggregate.members) == 1
-
-    assert aggregate.members[0].credential.creds.username == ''
+    get_item_utils_mock.assert_called()
+    # assert isinstance(results, user_domain_query_model.UserAccountModel)
 
 
-def test_family_user_aggregate_when_serializing(family_user_aggregate):
-    aggregate = family_user_aggregate
+def test_user_domain_query_model_when_fetching_local_user_credentials(
+        add_item_utils_mock,
+        get_item_utils_mock,
+        user_domain_query_model,
+        user_domain_write_model,
+        user_account_aggregate_w_local_credentials_adult,
+        family_aggregate
+):
+    user_domain_write_model.save_aggregate(user_account_aggregate_w_local_credentials_adult)
 
-    aggregate.create_new_adult_member(
-        first_name='TEST_NAME',
-        last_name='LAST_NAME',
-        email='TEST@EMAIL.COM',
-        dob=datetime(year=1988, month=9, day=6)
+    results = user_domain_query_model.get_user_local_credentials_by_id(
+        user_aggregate_id=user_account_aggregate_w_local_credentials_adult.id
     )
-    aggregate_dict = serialize_object_to_dict(family_user_aggregate)
-
-    assert aggregate.id == UUID(aggregate_dict.get("family")['id'])
-    assert aggregate.family.subscription_type.value == aggregate_dict.get("family")['subscription_type']
-
-
-def test_family_user_aggregate_when_adding_creds(family_user_aggregate, child_member_account_testable):
-    aggregate: FamilyUserAggregate = family_user_aggregate
-
-    aggregate.add_family_member(user_account=child_member_account_testable)
-    aggregate.set_basic_credential(member_id=child_member_account_testable.id,
-                                   password_hash=b64encode("TEST_PASSWORD".encode()))
-
-    assert aggregate.members[0].credential == Credential(
-        credential_type=CredentialTypeEnum.basic,
-        creds={'password_hash': b'VEVTVF9QQVNTV09SRA==', 'username': 'test_name_test_last'}
-    )
+    get_item_utils_mock.assert_called()
+    # assert isinstance(results, user_domain_query_model.LocalCredentialModel)

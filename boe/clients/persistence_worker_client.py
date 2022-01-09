@@ -2,7 +2,7 @@ from boe.applications.persistence_domain_apps import PersistenceDomainAppEventFa
 from boe.clients.client import PikaPublisherClient
 from boe.env import BOE_APP_EXCHANGE, PERSISTENCE_QUEUE_ROUTING_KEY
 from boe.lib.domains.bank_domain import BankDomainAggregate
-from boe.lib.domains.user_domain import FamilyUserAggregate
+from boe.lib.domains.user_domain import FamilyAggregate
 from boe.utils.core_utils import extract_type
 from boe.utils.serialization_utils import serialize_object_to_dict
 
@@ -27,7 +27,7 @@ class PersistenceWorkerClient(PikaPublisherClient):
             event=event
         )
 
-    def publish_persist_family_aggregate_event(self, aggregate: FamilyUserAggregate):
+    def publish_persist_family_aggregate_event(self, aggregate: FamilyAggregate):
         event = self.app_event_factory.build_persist_family_user_aggregate_event(
             aggregate_id=str(aggregate.id),
             payload=serialize_object_to_dict(aggregate),

@@ -2,6 +2,7 @@ from boe.env import (
     MONGO_HOST,
     MONGO_PORT,
     FAMILY_TABLE,
+    USER_ACCOUNT_TABLE,
     TASK_TABLE,
     STORE_TABLE,
     APP_DB,
@@ -21,6 +22,7 @@ tables = [
     FAMILY_TABLE,
     TASK_TABLE,
     STORE_TABLE,
+    USER_ACCOUNT_TABLE,
     BANK_ACCOUNT_TABLE
 ]
 

@@ -17,6 +17,9 @@ from boe.lib.domains.task_domain import (
 )
 from boe.lib.domains.user_domain import (
     FamilyEntity,
+    UserAccountEntity,
+    LocalCredential,
+    CredentialTypeEnum,
     SubscriptionTypeEnum,
     UserAccountTypeEnum
 )
@@ -54,6 +57,28 @@ class TaskEntityTranscoding(Transcoding):
 
     def decode(self, d: dict):
         return TaskEntity(**d)
+
+
+class UserAccountEntityTranscoding(Transcoding):
+    type = UserAccountEntity
+    name = "UserAccountEntity"
+
+    def encode(self, o: UserAccountEntity) -> str:
+        return asdict(o)
+
+    def decode(self, d: dict):
+        return UserAccountEntity(**d)
+
+
+class LocalCredentialTranscoding(Transcoding):
+    type = LocalCredential
+    name = "UserAccountEntity"
+
+    def encode(self, o: LocalCredential) -> str:
+        return asdict(o)
+
+    def decode(self, d: dict):
+        return LocalCredential(**d)
 
 
 class PersistenceRecordTranscoding(Transcoding):
@@ -109,6 +134,17 @@ class UserAccountTypeEnumTranscoding(Transcoding):
 
     def decode(self, d: int):
         return UserAccountTypeEnum(d)
+
+
+class CredentialTypeEnumTranscoding(Transcoding):
+    type = CredentialTypeEnum
+    name = "CredentialTypeEnum"
+
+    def encode(self, o: CredentialTypeEnum) -> str:
+        return o.value
+
+    def decode(self, d: str):
+        return CredentialTypeEnum(d)
 
 
 class SubscriptionTypeEnumTranscoding(Transcoding):
