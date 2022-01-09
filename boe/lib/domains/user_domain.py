@@ -245,7 +245,7 @@ class UserDomainQueryModel:
     class LocalCredentialModel:
         username: str
         password_hash: bytes
-        token: bytes
+        user_id: UUID
 
     @dataclass(frozen=True)
     class AdultUserAccountModel:
@@ -346,14 +346,20 @@ class UserDomainQueryModel:
             return self.LocalCredentialModel(
                 username=record['credential']['username'],
                 password_hash=record['credential'].get("password_hash", '').encode(),
-                token=record['credential'].get("token", '').encode()
+                user_id=UUID(record['credential'].get("user_id", ''))
             )
 
     def get_local_credential_by_username(self, username: str):
         collection = get_collection(database=self.db, collection=CREDENTIAL_STORE_TABLE)
 
         cursor = list(get_item(collection=collection, item_id=username, item_key="_id"))
-        print(cursor)
+
+        if len(cursor) == 1:
+            return self.LocalCredentialModel(
+                username=cursor[0].get("_id"),
+                password_hash=cursor[0].get("password_hash"),
+                user_id=UUID(cursor[0].get("user_id")),
+            )
 
 
 class UserDomainFactory:
