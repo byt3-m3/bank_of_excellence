@@ -78,7 +78,6 @@ class UserAccountEntity(Entity):
     last_name: str
     email: str
     dob: datetime
-    grade: int = field(default=0)
 
 
 @dataclass
@@ -156,7 +155,8 @@ class FamilyAggregate(Aggregate):
         family_entity = UserDomainFactory.build_family_entity(
             description=description,
             name=name,
-            subscription_type=subscription_type
+            subscription_type=subscription_type,
+            _id=_id
 
         )
 
@@ -165,7 +165,7 @@ class FamilyAggregate(Aggregate):
 
         return cls._create(
             cls.Created,
-            id=family_entity.id,
+            id=_id,
             family=family_entity,
             members=members
         )
@@ -341,9 +341,10 @@ class UserDomainFactory:
             name: str,
             description: str,
             subscription_type: SubscriptionTypeEnum,
+            _id: UUID,
     ) -> FamilyEntity:
         return FamilyEntity(
-            id=uuid4(),
+            id=_id,
             name=name,
             description=description,
             subscription_type=subscription_type
@@ -389,7 +390,6 @@ class UserDomainFactory:
             last_name: str,
             email: str,
             family_id: UUID,
-            grade: int = 0,
             _id: UUID = None
     ) -> UserAccountEntity:
         return UserAccountEntity(
@@ -399,7 +399,6 @@ class UserDomainFactory:
             last_name=last_name,
             email=email,
             family_id=family_id,
-            grade=grade,
             id=uuid4() if _id is None else _id
 
         )
@@ -414,7 +413,7 @@ class UserDomainFactory:
 
     @staticmethod
     def build_user_account_aggregate_w_local_credential(
-            account_type: Union[UserAccountTypeEnum, int],
+            account_type: Union[UserAccountTypeEnum, str],
             dob: datetime,
             first_name: str,
             last_name: str,
@@ -422,7 +421,6 @@ class UserDomainFactory:
             family_id: UUID,
             username: str,
             password_hash: bytes,
-
             _id: UUID = None
     ) -> UserAccountAggregate:
         return UserAccountAggregate.create(

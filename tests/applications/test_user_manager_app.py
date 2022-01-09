@@ -5,6 +5,7 @@ from uuid import UUID
 from boe.applications.user_domain_apps import (
     UserManagerApp,
     NewFamilyEvent,
+    UserAccountTypeEnum,
     SubscriptionTypeEnum,
     UserManagerAppEventFactory
 )
@@ -47,126 +48,27 @@ def family_uuid():
 
 
 @fixture
-def user_manager_app_testable():
+def user_manager_app():
     return UserManagerApp()
 
 
 @fixture
-def new_family_subscription_change_event(family_uuid):
-    return UserManagerAppEventFactory.build_family_subscription_change_event(
+def create_family_local_event(family_uuid):
+    return UserManagerAppEventFactory.build_create_family_local_event(
         family_id=family_uuid,
-        subscription_type=SubscriptionTypeEnum.premium
+        account_type=UserAccountTypeEnum.adult,
+        family_name='test_family',
+        first_name='test_name',
+        last_name='test_name',
+        dob=datetime.datetime(month=9, day=10, year=1980),
+        password_hash=b'TEST_PASSWORD',
+        email='test@email.com'
     )
 
 
-@fixture
-def new_child_account_event(family_uuid):
-    return UserManagerAppEventFactory.build_new_child_account_event(
-        family_id=str(family_uuid),
-        first_name='TEST_NAME',
-        last_name='TEST_NAME',
-        email='TEST_EMAIL',
-        grade=2,
-        dob=datetime.datetime(month=12, day=20, year=2014)
-    )
-
-
-@fixture
-def new_family_app_event_basic(family_uuid):
-    return UserManagerAppEventFactory.build_new_family_event(
-        description='TEST_DESCRIPTION',
-        name='TEST_NAME',
-        subscription_type=SubscriptionTypeEnum.basic,
-        first_name='test_firstname',
-        last_name='test_lastname',
-        email='test_lastname',
-        dob=datetime.datetime(month=9, day=6, year=1988).isoformat(),
-        family_id=str(family_uuid)
-
-    )
-
-
-@fixture
-def new_family_app_event_premium():
-    return NewFamilyEvent(
-        description='TEST_DESCRIPTION',
-        name='TEST_NAME',
-        subscription_type=SubscriptionTypeEnum.premium,
-        dob=datetime.datetime(month=9, day=6, year=1988)
-
-    )
-
-
-def test_user_manager_app_when_handling_new_family_app_event(
-        metric_publisher_mock,
-        notification_worker_client_mock,
-        pika_client_mock,
-        write_model_mock,
-        user_manager_app_testable,
-        new_family_app_event_basic
+def test_user_manager_app_when_handling_create_family_local_user_event(
+        user_manager_app,
+        create_family_local_event
 ):
-    app = user_manager_app_testable
-    event = new_family_app_event_basic
-
-    result = app.handle_event(event)
-    assert isinstance(result, UUID)
-
-    write_model_mock.assert_called()
-    notification_worker_client_mock.assert_called()
-    pika_client_mock.assert_called()
-    metric_publisher_mock.assert_called()
-
-
-def test_user_manager_app_when_handling_new_child_account_event(
-        metric_publisher_mock,
-        pika_client_mock,
-        notification_worker_client_mock,
-        write_model_mock,
-        user_manager_app_testable,
-        new_family_app_event_basic
-):
-    app = user_manager_app_testable
-    new_family_event = new_family_app_event_basic
-
-    aggregate_id = app.handle_event(new_family_event)
-
-    new_child_account_event = UserManagerAppEventFactory.build_new_child_account_event(
-        family_id=str(aggregate_id),
-        dob=datetime.datetime(month=12, day=20, year=2014),
-        grade=2,
-        email='test_email',
-        first_name='test_firstname',
-        last_name='test_lastname'
-    )
-
-    app.handle_event(new_child_account_event)
-    pika_client_mock.assert_called()
-    write_model_mock.assert_called()
-    notification_worker_client_mock.assert_called()
-    metric_publisher_mock.assert_called()
-
-
-def test_user_manager_app_when_handling_family_subscription_change_event(
-        metric_publisher_mock,
-        notification_worker_client_mock,
-        pika_client_mock,
-        write_model_mock,
-        user_manager_app_testable,
-        new_family_app_event_basic
-):
-    app = user_manager_app_testable
-    new_family_event = new_family_app_event_basic
-
-    aggregate_id = app.handle_event(new_family_event)
-
-    sub_change_event = UserManagerAppEventFactory.build_family_subscription_change_event(
-        family_id=str(aggregate_id),
-        subscription_type=SubscriptionTypeEnum.premium
-    )
-
-    app.handle_event(sub_change_event)
-
-    write_model_mock.assert_called()
-    notification_worker_client_mock.assert_called()
-    pika_client_mock.assert_called()
-    metric_publisher_mock.assert_called()
+    testable = user_manager_app
+    testable.handle_event(create_family_local_event)

@@ -90,26 +90,11 @@ def main():
     try:
 
         event_map = {
-            "NewFamilyEvent": {
-                "event_factory": app_event_factory.build_new_family_event,
-                "event_class": NewFamilyEvent
+            "CreateFamilyLocalUserEvent": {
+                "event_factory": app_event_factory.build_create_family_local_event,
+                "event_class": UserManagerAppEventFactory.CreateFamilyLocalUserEvent
             },
-            "NewChildAccountEvent": {
-                "event_factory": app_event_factory.build_new_child_account_event,
-                "event_class": NewChildAccountEvent
-            },
-            "FamilySubscriptionChangeEvent": {
-                "event_factory": app_event_factory.build_family_subscription_change_event,
-                "event_class": FamilySubscriptionChangeEvent
-            },
-            "CreateCognitoUserEvent": {
-                "event_factory": app_event_factory.build_create_cognito_user_event,
-                "event_class": CreateCognitoUserEvent
-            },
-            "NewAdultAccountEvent": {
-                "event_factory": app_event_factory.build_new_adult_account_event,
-                "event_class": NewAdultAccountEvent
-            }
+
         }
 
         register_event_map(event_map=event_map)
