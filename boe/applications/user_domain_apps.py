@@ -131,7 +131,7 @@ class UserManagerAppEventFactory:
             last_name: str,
             email: str,
             family_name: str,
-            password_hash: Union[bytes, str],
+            password_hash: bytes,
             account_type: int,
             dob: str,
     ) -> 'UserManagerAppEventFactory.CreateFamilyLocalUserEvent':
@@ -139,7 +139,7 @@ class UserManagerAppEventFactory:
             family_id=UUID(family_id),
             first_name=first_name,
             last_name=last_name,
-            password_hash=password_hash.encode(encoding='utf8'),
+            password_hash=password_hash,
             email=email,
             family_name=family_name,
             account_type=UserAccountTypeEnum(account_type),

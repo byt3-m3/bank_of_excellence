@@ -43,7 +43,7 @@ def new_family():
         user_manager_worker_client = UserManagerWorkerClient()
         user_manager_worker_client.publish_new_family_event(**event_payload, id=family_id)
         query_model = UserDomainQueryModel()
-        query_response = query_model.get_family_by_id(family_id=UUID(family_id))
+        query_response = query_model.get_family_by_id(family_aggregate_id=UUID(family_id))
         if query_response:
             return build_json_response(
                 status=http.HTTPStatus.OK,
@@ -161,7 +161,7 @@ def new_family_adult_account(family_id):
 def get_family(family_id):
     query_model = UserDomainQueryModel()
 
-    family = query_model.get_family_by_id(family_id=UUID(family_id))
+    family = query_model.get_family_by_id(family_aggregate_id=UUID(family_id))
 
     if family:
         data = serialize_object(family)

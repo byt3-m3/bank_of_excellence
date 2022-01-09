@@ -56,11 +56,11 @@ def user_manager_app():
 def create_family_local_event(family_uuid):
     return UserManagerAppEventFactory.build_create_family_local_event(
         family_id=family_uuid,
-        account_type=UserAccountTypeEnum.adult,
+        account_type=UserAccountTypeEnum.adult.value,
         family_name='test_family',
         first_name='test_name',
         last_name='test_name',
-        dob=datetime.datetime(month=9, day=10, year=1980),
+        dob=datetime.datetime(month=9, day=10, year=1980).isoformat(),
         password_hash=b'TEST_PASSWORD',
         email='test@email.com'
     )
