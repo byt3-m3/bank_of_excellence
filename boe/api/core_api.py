@@ -150,6 +150,14 @@ def register_family_local():
             family_id = uuid4()
 
             client = UserManagerWorkerClient()
+            query_model = UserDomainQueryModel()
+
+            if query_model.get_local_credential_by_username(username=payload.get("desired_username")):
+                return build_json_response(
+                    status=http.HTTPStatus.EXPECTATION_FAILED,
+                    payload={"msg": f"Username '{payload.get('desired_username')}' Already Taken"}
+                )
+
             client.publish_create_family_local_user_event(
                 family_id=family_id,
                 family_name=payload.get("family_name"),
