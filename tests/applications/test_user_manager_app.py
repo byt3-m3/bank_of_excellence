@@ -55,7 +55,7 @@ def user_manager_app():
 @fixture
 def create_family_local_event(family_uuid):
     return UserManagerAppEventFactory.build_create_family_local_event(
-        family_id=family_uuid,
+        family_id=str(family_uuid),
         account_type=UserAccountTypeEnum.adult.value,
         family_name='test_family',
         first_name='test_name',
