@@ -250,6 +250,7 @@ class UserDomainQueryModel:
         email: str
         version: int
         family_id: UUID
+        username: str
 
     @dataclass(frozen=True)
     class BasicFamilyModel:
@@ -308,7 +309,8 @@ class UserDomainQueryModel:
                 first_name=record['user_entity']['first_name'],
                 email=record['user_entity']['email'],
                 family_id=UUID(record['user_entity']['family_id']),
-                version=record['version']
+                version=record['version'],
+                username=record['credential']['username']
             )
 
     def get_user_local_credentials_by_id(self, user_aggregate_id: UUID):
