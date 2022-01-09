@@ -55,17 +55,26 @@ def authenticate_local_user():
 
     key, salt = get_key_salt_from_value(stored_key=creds.password_hash)
 
-    return build_json_response(
-        status=http.HTTPStatus.OK,
-        payload={
-            "auth_result": verify_password_hash(
-                password=body['LocalAuthRequest'].get("password"),
-                old_key=key,
-                salt=salt
-            ),
-            "id": str(creds.user_id)
-        }
+    verification_result = verify_password_hash(
+        password=body['LocalAuthRequest'].get("password"),
+        old_key=key,
+        salt=salt
     )
+    if verification_result:
+        return build_json_response(
+            status=http.HTTPStatus.OK,
+            payload={
+                "auth_result": verification_result,
+                "id": str(creds.user_id)
+            }
+        )
+    else:
+        return build_json_response(
+            status=http.HTTPStatus.OK,
+            payload={
+                "auth_result": verification_result
+            }
+        )
 
 
 if __name__ == '__main__':
