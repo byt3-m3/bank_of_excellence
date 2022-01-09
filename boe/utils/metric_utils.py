@@ -26,8 +26,8 @@ class PlatformMetricField:
 class MetricWriter:
 
     def __init__(self):
-        self.client = InfluxDBClient(url="http://192.168.1.5:8086", token=token, org=org)
-        self.write_api = self.client.write_api(write_options=SYNCHRONOUS)
+        # self.client = InfluxDBClient(url="http://192.168.1.5:8086", token=token, org=org)
+        # self.write_api = self.client.write_api(write_options=SYNCHRONOUS)
         self.org = 'bits'
         self.bucket = 'boe_metrics'
 
@@ -39,13 +39,14 @@ class MetricWriter:
             field_name: str,
             field_value: float
     ):
-        point = Point(metric_name) \
-            .tag(tag_key, tag_value) \
-            .field(field_name, field_value) \
-            .tag('stage', STAGE) \
-            .time(datetime.utcnow(), WritePrecision.NS)
-
-        self.write_api.write(self.bucket, org, point)
+        pass
+        # point = Point(metric_name) \
+        #     .tag(tag_key, tag_value) \
+        #     .field(field_name, field_value) \
+        #     .tag('stage', STAGE) \
+        #     .time(datetime.utcnow(), WritePrecision.NS)
+        #
+        # self.write_api.write(self.bucket, org, point)
 
     def publish_service_metric_v2(
             self,
@@ -53,16 +54,17 @@ class MetricWriter:
             tags: dict,
             fields: dict
     ):
-        point = Point(metric_name)
-        for key, val in tags.items():
-            point.tag(key=key, value=val)
-
-        for key, val in fields.items():
-            point.field(field=key, value=val)
-
-        point.time(datetime.utcnow(), WritePrecision.NS)
-
-        self.write_api.write(self.bucket, org, point)
+        pass
+        # point = Point(metric_name)
+        # for key, val in tags.items():
+        #     point.tag(key=key, value=val)
+        #
+        # for key, val in fields.items():
+        #     point.field(field=key, value=val)
+        #
+        # point.time(datetime.utcnow(), WritePrecision.NS)
+        #
+        # self.write_api.write(self.bucket, org, point)
 
     def publish_service_metric(
             self,
@@ -71,10 +73,11 @@ class MetricWriter:
             field_value: Union[float, int],
             service_name: str
     ):
-        self.publish_metric(
-            metric_name=metric_name,
-            field_name=field_name,
-            field_value=float(field_value),
-            tag_value=service_name,
-            tag_key='ServiceName'
-        )
+        pass
+        # self.publish_metric(
+        #     metric_name=metric_name,
+        #     field_name=field_name,
+        #     field_value=float(field_value),
+        #     tag_value=service_name,
+        #     tag_key='ServiceName'
+        # )
