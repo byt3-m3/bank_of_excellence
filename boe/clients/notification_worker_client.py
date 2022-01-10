@@ -3,7 +3,7 @@ from dataclasses import asdict
 from boe.clients.client import PikaPublisherClient
 from boe.env import BOE_APP_EXCHANGE, NOTIFICATION_QUEUE_ROUTING_KEY
 from boe.lib.common_models import AppEvent
-from boe.utils.core_utils import extract_type
+from boe.utils.core_utils import extract_name_from_object
 
 
 class NotificationWorkerClient(PikaPublisherClient):
@@ -18,6 +18,6 @@ class NotificationWorkerClient(PikaPublisherClient):
     def publish_app_event(self, event: AppEvent):
         self.publish(
             {
-                extract_type(event): asdict(event)
+                extract_name_from_object(event): asdict(event)
             }
         )

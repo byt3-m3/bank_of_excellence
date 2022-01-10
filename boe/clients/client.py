@@ -4,7 +4,7 @@ from typing import Union
 import pika
 from boe.env import AMQP_HOST, RABBITMQ_PASSWORD, RABBITMQ_USERNAME, BOE_APP_EXCHANGE
 from boe.lib.common_models import AppEvent, AppNotification
-from boe.utils.core_utils import extract_type
+from boe.utils.core_utils import extract_name_from_object
 from boe.utils.serialization_utils import serialize_object
 from cbaxter1988_utils.pika_utils import make_pika_publisher
 
@@ -26,7 +26,7 @@ class PikaPublisherClient:
             exchange=self.exchange,
             routing_key=self.routing_key,
             body=json.dumps({
-                extract_type(event): json.loads(serialize_object(event))
+                extract_name_from_object(event): json.loads(serialize_object(event))
             }),
             properties=properties
         )
