@@ -24,6 +24,9 @@ from cbaxter1988_utils.pymongo_utils import (
 )
 from eventsourcing.domain import Aggregate, event
 from pymongo.errors import DuplicateKeyError
+from cbaxter1988_utils.log_utils import get_logger
+
+logger = get_logger("TaskDomain")
 
 
 class TaskStatusEnum(Enum):
@@ -59,8 +62,16 @@ class TaskAggregate(Aggregate):
         )
 
     @event
-    def make_task_complete(self, status=TaskStatusEnum.complete):
-        self.task.status = status
+    def mark_task_complete(self, status=TaskStatusEnum.complete):
+        if not self.task.evidence_required:
+            self.task.status = status
+            return
+
+        if self.task.is_validated:
+            self.task.status = status
+            return
+
+        logger.info(f"Invalid Request, taskID={self.task.id} has not been validated")
 
     @event
     def add_task_evidence(self, data: bytes):
@@ -81,7 +92,7 @@ class TaskDomainFactory:
             due_date: datetime,
             evidence_required: bool,
             value: float,
-            _id=None
+            _id: UUID = None
 
     ) -> TaskEntity:
         return TaskEntity(
@@ -102,7 +113,8 @@ class TaskDomainFactory:
             description: str,
             due_date: datetime,
             evidence_required: bool,
-            value: float
+            value: float,
+            _id: str
     ) -> TaskAggregate:
         return TaskAggregate.create(
             task=TaskDomainFactory.build_task_entity(
@@ -111,7 +123,8 @@ class TaskDomainFactory:
                 description=description,
                 due_date=due_date,
                 evidence_required=evidence_required,
-                value=value
+                value=value,
+                _id=UUID(_id)
             )
         )
 

@@ -29,7 +29,8 @@ def new_task_event():
         due_date=datetime.datetime(year=2022, day=2, month=12),
         description='Test Task',
         name='TestTask',
-        value=5.00
+        value=5.00,
+        task_id=str(uuid.uuid4())
     )
 
 
@@ -41,7 +42,8 @@ def new_task_event_evidence_required():
         due_date=datetime.datetime(year=2022, day=2, month=12),
         description='Test Task',
         name='TestTask',
-        value=5.00
+        value=5.00,
+        task_id=str(uuid.uuid4())
     )
 
 

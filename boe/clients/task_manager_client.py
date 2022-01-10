@@ -23,6 +23,7 @@ class TaskManagerWorkerClient(PikaPublisherClient):
             description: str,
             due_date: datetime.datetime,
             owner_id: UUID,
+            task_id: UUID,
             evidence_required: bool,
             value: float
 
@@ -33,7 +34,8 @@ class TaskManagerWorkerClient(PikaPublisherClient):
             owner_id=str(owner_id),
             evidence_required=evidence_required,
             value=value,
-            name=name
+            name=name,
+            task_id=str(task_id)
         )
 
         self.publish_event(event=event)

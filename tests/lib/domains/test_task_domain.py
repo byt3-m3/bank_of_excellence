@@ -1,4 +1,5 @@
 import datetime
+import uuid
 
 from boe.lib.domains.task_domain import (
     TaskDomainFactory,
@@ -16,7 +17,8 @@ def task_aggregate_evidence_required_testable():
         evidence_required=False,
         value=50,
         name='Clean Room',
-        description='Clean you room'
+        description='Clean you room',
+        _id=str(uuid.uuid4())
     )
 
 
@@ -40,7 +42,7 @@ def test_task_aggregate_when_created(task_aggregate_evidence_required_testable):
 def test_task_aggregate_when_marking_complete(task_aggregate_evidence_required_testable):
     task_aggregate = task_aggregate_evidence_required_testable
 
-    task_aggregate.make_task_complete()
+    task_aggregate.mark_task_complete()
 
     assert task_aggregate.task.status is TaskStatusEnum.complete
 

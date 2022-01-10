@@ -25,6 +25,7 @@ logger = cbaxter1988_utils.log_utils.get_logger("TaskDomainApps")
 class TaskManagerAppEventFactory:
     @dataclass(frozen=True)
     class NewTaskEvent(AppEvent):
+        task_id: UUID
         owner_id: UUID
         name: str
         description: str
@@ -56,6 +57,7 @@ class TaskManagerAppEventFactory:
             due_date: datetime,
             evidence_required: bool,
             value: float,
+            task_id: str,
             **kwargs
 
     ) -> NewTaskEvent:
@@ -66,7 +68,8 @@ class TaskManagerAppEventFactory:
             status=TaskStatusEnum.incomplete,
             due_date=due_date,
             evidence_required=evidence_required,
-            value=value
+            value=value,
+            task_id=UUID(task_id)
         )
 
     @classmethod
@@ -133,7 +136,8 @@ class TaskManagerApp(Application):
             description=event.description,
             owner_id=str(event.owner_id),
             evidence_required=event.evidence_required,
-            name=event.name
+            name=event.name,
+            _id=str(event.task_id)
         )
         self.write_model.save_aggregate(task_aggregate)
 
@@ -143,7 +147,7 @@ class TaskManagerApp(Application):
     @handle_event.register(TaskManagerAppEventFactory.MarkTaskCompleteEvent)
     def _(self, event: TaskManagerAppEventFactory.MarkTaskCompleteEvent):
         task_aggregate = self.get_task_aggregate(task_id=event.task_id)
-        task_aggregate.make_task_complete()
+        task_aggregate.mark_task_complete()
 
         self.write_model.save_aggregate(task_aggregate)
         self.save(task_aggregate)
