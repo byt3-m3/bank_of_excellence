@@ -357,6 +357,13 @@ class UserManagerApp(Application):
         family_aggregate = self._get_family_aggregate(family_id=event.family_id)
 
         self._save_aggregate(user_aggregate)
+        self.write_model.save_local_credential(
+            username=user_aggregate.credential.username,
+            password_hash=user_aggregate.credential.password_hash,
+            user_id=user_aggregate.id,
+
+        )
+
         family_aggregate.add_family_member(
             user_aggregate_id=user_aggregate.id
         )

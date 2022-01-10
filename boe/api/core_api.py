@@ -177,12 +177,20 @@ def register_family_local():
 @cross_origin()
 def register_local_child_user():
     body = request.json
-    print(body)
+
     for event_name, payload in body.items():
         if event_name == 'CreateLocalUserEvent':
             user_id = uuid4()
             client = UserManagerWorkerClient()
             query_model = UserDomainQueryModel()
+            if query_model.get_local_credential_by_username(username=payload.get("desired_username")):
+                return build_json_response(
+                    status=http.HTTPStatus.EXPECTATION_FAILED,
+                    payload={"msg": f"Username '{payload.get('desired_username')}' Already Taken"}
+                )
+
+
+
             if not query_model.get_family_by_id(family_aggregate_id=UUID(payload.get("family_id"))):
                 return build_json_response(
                     status=http.HTTPStatus.BAD_REQUEST,
