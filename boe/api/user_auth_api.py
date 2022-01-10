@@ -63,11 +63,14 @@ def authenticate_local_user():
         salt=salt
     )
     if verification_result:
+        user = query_model.get_user_account_by_id(creds.user_id)
         return build_json_response(
             status=http.HTTPStatus.OK,
             payload={
                 "auth_result": verification_result,
-                "id": str(creds.user_id)
+                "user_id": str(creds.user_id),
+                "family_id": str(user.family_id),
+                "account_type": user.account_type.value
             }
         )
     else:
