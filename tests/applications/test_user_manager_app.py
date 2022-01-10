@@ -2,17 +2,14 @@ import datetime
 from unittest.mock import patch
 from uuid import UUID
 
+import pytest
 from boe.applications.user_domain_apps import (
     UserManagerApp,
-    NewFamilyEvent,
     UserAccountTypeEnum,
-    SubscriptionTypeEnum,
     UserManagerAppEventFactory
 )
-from boe.lib.domains.user_domain import UserDomainQueryModel
 from pytest import fixture
-from boe.utils.password_utils import hash_password, verify_password_hash, get_key_salt_from_value
-import base64
+from eventsourcing.application import AggregateNotFound
 
 
 @fixture
@@ -23,8 +20,9 @@ def metric_publisher_mock():
 
 @fixture
 def write_model_mock():
-    with patch("boe.applications.user_domain_apps.UserDomainWriteModel", autospec=True) as client_mock:
+    with patch("boe.applications.user_domain_apps.UserDomainWriteModel") as client_mock:
         yield client_mock
+
 
 @fixture
 def query_model_mock():
@@ -75,7 +73,20 @@ def create_family_local_event(family_uuid):
     )
 
 
-def _test_user_manager_app_when_handling_create_family_local_user_event(
+@fixture
+def create_local_user_event(family_uuid):
+    return UserManagerAppEventFactory.build_create_local_user_event(
+        family_id=str(family_uuid),
+        account_type=UserAccountTypeEnum.adult.value,
+        first_name='test_name',
+        last_name='test_name',
+        dob=datetime.datetime(month=9, day=10, year=1980).isoformat(),
+        password='TEST_PASSWORD',
+        desired_username='my_username'
+    )
+
+
+def test_user_manager_app_when_handling_create_family_local_user_event(
         write_model_mock,
         pika_client_mock,
 
@@ -85,10 +96,34 @@ def _test_user_manager_app_when_handling_create_family_local_user_event(
     testable = user_manager_app
     testable.handle_event(create_family_local_event)
 
-    # model = UserDomainQueryModel()
-    #
-    # result = model.get_local_credential_by_username(username=create_family_local_event.desired_username)
-    #
-    # key, salt = get_key_salt_from_value(stored_key=result.password_hash)
-    #
-    # assert verify_password_hash(password=create_family_local_event.password, old_key=key, salt=salt) is True
+    write_model_mock.assert_called()
+    pika_client_mock.assert_called()
+
+
+def test_user_manager_app_when_handling_create_local_user_event(
+        write_model_mock,
+        pika_client_mock,
+        create_local_user_event,
+        create_family_local_event,
+        user_manager_app
+):
+    testable = user_manager_app
+
+    testable.handle_event(create_family_local_event)
+    testable.handle_event(create_local_user_event)
+    write_model_mock.assert_called()
+    pika_client_mock.assert_called()
+
+
+def test_user_manager_app_when_handling_create_local_user_event_fails_missing_family_id(
+        write_model_mock,
+        pika_client_mock,
+        create_local_user_event,
+        create_family_local_event,
+        user_manager_app
+):
+    testable = user_manager_app
+    with pytest.raises(AggregateNotFound):
+        testable.handle_event(create_local_user_event)
+    write_model_mock.assert_called()
+    pika_client_mock.assert_called()

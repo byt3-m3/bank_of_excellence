@@ -3,11 +3,7 @@ import json
 from boe.applications.user_domain_apps import (
     UserManagerAppEventFactory,
     UserManagerApp,
-    NewAdultAccountEvent,
-    NewChildAccountEvent,
-    FamilySubscriptionChangeEvent,
-    CreateCognitoUserEvent,
-    NewFamilyEvent
+
 )
 from boe.env import (
     AMQP_HOST,
@@ -93,6 +89,10 @@ def main():
             "CreateFamilyLocalUserEvent": {
                 "event_factory": app_event_factory.build_create_family_local_event,
                 "event_class": UserManagerAppEventFactory.CreateFamilyLocalUserEvent
+            },
+            "CreateLocalUserEvent": {
+                "event_factory": app_event_factory.build_create_local_user_event,
+                "event_class": UserManagerAppEventFactory.CreateLocalUserEvent
             },
 
         }

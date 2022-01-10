@@ -46,3 +46,27 @@ class UserManagerWorkerClient(PikaPublisherClient):
 
         self.publish_event(event)
         return _family_id
+
+    def publish_create_local_child_user_event(
+            self,
+            password: str,
+            first_name: str,
+            last_name: str,
+            dob: datetime,
+            desired_username: str,
+            account_id: UUID,
+            family_id: UUID
+    ):
+        event = self.event_factory.build_create_local_user_event(
+            account_type=UserAccountTypeEnum.child.value,
+            last_name=last_name,
+            first_name=first_name,
+            family_id=str(family_id),
+            password=password,
+            account_id=str(account_id),
+            desired_username=desired_username,
+            dob=dob
+        )
+        self.publish_event(event)
+
+        return account_id

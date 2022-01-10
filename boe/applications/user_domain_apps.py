@@ -42,7 +42,6 @@ from eventsourcing.application import Application
 from eventsourcing.persistence import Transcoder
 from boe.utils.password_utils import hash_password
 
-
 logger = get_logger("UserManagerApp")
 
 
@@ -121,6 +120,17 @@ class UserManagerAppEventFactory:
         dob: datetime
 
     @dataclass(frozen=True)
+    class CreateLocalUserEvent(AppEvent):
+        family_id: UUID
+        account_id: UUID
+        first_name: str
+        last_name: str
+        account_type: UserAccountTypeEnum
+        dob: datetime
+        desired_username: str
+        password: str
+
+    @dataclass(frozen=True)
     class CreateCognitoUserEvent(AppEvent):
         username: str
         email: str
@@ -149,6 +159,30 @@ class UserManagerAppEventFactory:
             account_type=UserAccountTypeEnum(account_type),
             dob=datetime.fromisoformat(dob),
             desired_username=desired_username
+        )
+
+    @classmethod
+    def build_create_local_user_event(
+            cls,
+            desired_username: str,
+            first_name: str,
+            last_name: str,
+            dob: str,
+            family_id: str,
+            password: str,
+            account_type: int,
+            account_id: str = None
+
+    ) -> 'UserManagerAppEventFactory.CreateLocalUserEvent':
+        return cls.CreateLocalUserEvent(
+            account_type=UserAccountTypeEnum(account_type),
+            last_name=last_name,
+            first_name=first_name,
+            desired_username=desired_username,
+            dob=datetime.fromisoformat(dob),
+            account_id=uuid.UUID(account_id) if account_id else uuid.uuid4(),
+            family_id=uuid.UUID(family_id),
+            password=password
         )
 
 
@@ -230,6 +264,9 @@ class UserManagerApp(Application):
     def _get_family_aggregate(self, family_id: UUID) -> FamilyAggregate:
         return self.repository.get(aggregate_id=family_id)
 
+    def _get_user_account_aggregate(self, family_id: UUID) -> UserAccountAggregate:
+        return self.repository.get(aggregate_id=family_id)
+
     def _save_aggregate(self, aggregate: Union[FamilyAggregate, UserAccountAggregate]):
 
         try:
@@ -300,6 +337,31 @@ class UserManagerApp(Application):
         else:
             self.metric_publisher.incr_mock_cognito_user_created_success_metric(service_name=self._service_name)
             logger.info(f"Received and Processed Fake Event={event}")
+
+    @handle_event.register(f.CreateLocalUserEvent)
+    def _(self, event: f.CreateLocalUserEvent):
+
+        _password_hash = hash_password(password=event.password).hex()
+
+        user_aggregate = self.factory.build_user_account_aggregate_w_local_credential(
+            account_type=event.account_type,
+            dob=event.dob,
+            first_name=event.first_name,
+            last_name=event.last_name,
+            password_hash=_password_hash,
+            username=event.desired_username,
+            family_id=event.family_id,
+            email='',
+            _id=event.account_id
+        )
+        family_aggregate = self._get_family_aggregate(family_id=event.family_id)
+
+        self._save_aggregate(user_aggregate)
+        family_aggregate.add_family_member(
+            user_aggregate_id=user_aggregate.id
+        )
+        self._save_aggregate(family_aggregate)
+        return user_aggregate.id
 
 
 f = UserAuthManagerEventFactory

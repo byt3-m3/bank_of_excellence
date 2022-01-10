@@ -173,6 +173,38 @@ def register_family_local():
             return build_json_response(status=http.HTTPStatus.OK, payload={"family_id": str(family_id)})
 
 
+@app.route("/api/v1/registration/user/child", methods=['POST'])
+@cross_origin()
+def register_local_child_user():
+    body = request.json
+    print(body)
+    for event_name, payload in body.items():
+        if event_name == 'CreateLocalUserEvent':
+            user_id = uuid4()
+            client = UserManagerWorkerClient()
+            query_model = UserDomainQueryModel()
+            if not query_model.get_family_by_id(family_aggregate_id=UUID(payload.get("family_id"))):
+                return build_json_response(
+                    status=http.HTTPStatus.BAD_REQUEST,
+                    payload={"msg": f"Invalid FamilyID provided: {payload.get('family_id')}"}
+                )
+
+            client.publish_create_local_child_user_event(
+                password=payload.get("password"),
+                account_id=user_id,
+                family_id=payload.get("family_id"),
+                desired_username=payload.get("desired_username"),
+                last_name=payload.get("last_name"),
+                first_name=payload.get("first_name"),
+                dob=payload.get("dob")
+            )
+            return build_json_response(
+                status=http.HTTPStatus.CREATED,
+                payload={"user_id": str(user_id)}
+
+            )
+
+
 @app.route("/api/v1/family/<family_id>/member/<member_id>")
 @cross_origin()
 def get_family_member(family_id, member_id):
