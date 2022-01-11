@@ -171,6 +171,7 @@ class TaskDomainQueryModel:
         status: TaskStatusEnum
         name: str
         description: str
+        evidence_required: bool
 
     def __init__(self):
         self.client = get_mongo_client_w_auth(
@@ -201,6 +202,7 @@ class TaskDomainQueryModel:
                 value=task_data['task']["value"],
                 name=task_data['task']["name"],
                 description=task_data['task']["description"],
+                evidence_required=task_data['task']["evidence_required"],
             )
 
             for task_data in results
